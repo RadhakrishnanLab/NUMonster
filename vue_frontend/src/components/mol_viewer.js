@@ -7,6 +7,7 @@ import {
 } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import { InteractionsProvider } from 'molstar/lib/mol-model-props/computed/interactions';
 // import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {
   DefaultPluginUISpec,
@@ -63,12 +64,18 @@ export class MolstarDemoViewer {
     this.plugin.behaviors.layout.leftPanelTabName.next('data');
 
     const data = await this.plugin.builders.data.download({url}, { state: { isGhost: true } });
+    console.log('data');
     console.log(data);
     const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);
-
+    console.log('trajectory');
+    console.log(trajectory);
     const model = await this.plugin.builders.structure.createModel(trajectory);
     if (!model) return;
+    console.log('model');
+    console.log(model);
     const structure = await this.plugin.builders.structure.createStructure(model);
+    console.log('structure');
+    console.log(structure);
     const {type, coloring, uniformColor} = reprParams;
     let props = {
       type: type,
@@ -82,9 +89,13 @@ export class MolstarDemoViewer {
     if (type === 'cartoon') {
       props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
     }
+    console.log('props');
     console.log(props);
     const repr = createStructureRepresentationParams(this.plugin, structure.data, props);
+    console.log('repr');
+    console.log(repr);
     this.currentStructure = await this.plugin.build().to(structure).apply(StateTransforms.Representation.StructureRepresentation3D, repr).commit();
+    console.log(this.currentStructure);
   }
 
   async updateMoleculeRepresentation (reprParams) {
@@ -114,6 +125,12 @@ export class MolstarDemoViewer {
     console.log('there');
     const newRepresenation = createStructureRepresentationParams(this.plugin, void 0, props);
     console.log(`Trying to update structure 3D Representation to ${type}`)
+    console.log(InteractionsProvider);
+    const data = this.plugin.managers.structure.hierarchy;
+    console.log('data');   
+    console.log(data);
+    console.log(this.plugin.state);
+
     await this.plugin.build().to(this.currentStructure).update(newRepresenation).commit();
   }
 
