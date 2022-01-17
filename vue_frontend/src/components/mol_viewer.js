@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import 'molstar/lib/mol-util/polyfill';
 // import {PluginConfig} from 'molstar/lib/mol-plugin/config';
 // import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
@@ -15,6 +17,8 @@ import {
 } from 'molstar/lib/mol-plugin-ui/spec';
 import {createPlugin} from 'molstar/lib/mol-plugin-ui';
 import {Color} from 'molstar/lib/mol-util/color';
+import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder';
+import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
 
 // type RepresentationParams = {
 //   type: "ball-and-stick" | "cartoon" | "putty",
@@ -64,18 +68,11 @@ export class MolstarDemoViewer {
     this.plugin.behaviors.layout.leftPanelTabName.next('data');
 
     const data = await this.plugin.builders.data.download({url}, { state: { isGhost: true } });
-    console.log('data');
-    console.log(data);
     const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);
-    console.log('trajectory');
-    console.log(trajectory);
     const model = await this.plugin.builders.structure.createModel(trajectory);
     if (!model) return;
-    console.log('model');
-    console.log(model);
     const structure = await this.plugin.builders.structure.createStructure(model);
-    console.log('structure');
-    console.log(structure);
+
     const {type, coloring, uniformColor} = reprParams;
     let props = {
       type: type,
@@ -89,13 +86,30 @@ export class MolstarDemoViewer {
     if (type === 'cartoon') {
       props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
     }
-    console.log('props');
-    console.log(props);
     const repr = createStructureRepresentationParams(this.plugin, structure.data, props);
     console.log('repr');
     console.log(repr);
     this.currentStructure = await this.plugin.build().to(structure).apply(StateTransforms.Representation.StructureRepresentation3D, repr).commit();
+
+    // create chain A
+    const query1 = MS.struct.generator.atomGroups({
+        'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'A'])
+    })
+    const componentA = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query1, `Chain A` /* needs to be unique per component */);
+    if (componentA) this.structureA = await this.plugin.builders.structure.representation.addRepresentation(componentA, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(202, 0, 0)} });
+
+    // create chain B
+    const query2 = MS.struct.generator.atomGroups({
+      'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'B'])
+    })
+    const componentB = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query2, `Chain B` /* needs to be unique per component */);
+    if (componentB) this.structureB = await this.plugin.builders.structure.representation.addRepresentation(componentB, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(0, 200, 0)} });
+    // this.currentStructure =  [this.structureA, this.structureB];
+
+    console.log('current structs');
     console.log(this.currentStructure);
+    console.log(this.structureB);
+    console.log(this.plugin.managers.structure.hierarchy.current.structures);
   }
 
   async updateMoleculeRepresentation (reprParams) {
@@ -127,7 +141,7 @@ export class MolstarDemoViewer {
     console.log(`Trying to update structure 3D Representation to ${type}`)
     console.log(InteractionsProvider);
     const data = this.plugin.managers.structure.hierarchy;
-    console.log('data');   
+    console.log('data');
     console.log(data);
     console.log(this.plugin.state);
 
@@ -136,6 +150,10 @@ export class MolstarDemoViewer {
 
   async toggleControls (isVisible) {
     await PluginCommands.Layout.Update(this.plugin, { state: { showControls: isVisible } });
+  }
+
+  async updateA(){
+    await this.plugin.build().to(this.structureA).update(createStructureRepresentationParams(this.plugin, void 0, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(0, 0, 200)}})).commit();
   }
 
   dispose () {
