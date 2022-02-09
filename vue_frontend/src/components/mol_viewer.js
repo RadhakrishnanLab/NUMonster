@@ -28,7 +28,6 @@ import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model
 
 export class MolstarDemoViewer {
   // plugin: PluginUIContext;
-  // currentStructure: any;
 
   constructor (element) {
     const spec = {
@@ -60,6 +59,10 @@ export class MolstarDemoViewer {
       ]
     }
     this.plugin = createPlugin(element, spec);
+    this.propsA = null;
+    this.propsB = null;
+    this.structureA = null;
+    this.structureB = null;
   }
 
   async loadStructureFromData (url, format, reprParams) {
@@ -89,25 +92,36 @@ export class MolstarDemoViewer {
     const repr = createStructureRepresentationParams(this.plugin, structure.data, props);
     console.log('repr');
     console.log(repr);
-    this.currentStructure = await this.plugin.build().to(structure).apply(StateTransforms.Representation.StructureRepresentation3D, repr).commit();
+    // this.currentStructure = await this.plugin.build().to(structure).apply(StateTransforms.Representation.StructureRepresentation3D, repr).commit();
 
     // create chain A
     const query1 = MS.struct.generator.atomGroups({
         'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'A'])
     })
     const componentA = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query1, `Chain A` /* needs to be unique per component */);
-    if (componentA) this.structureA = await this.plugin.builders.structure.representation.addRepresentation(componentA, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(202, 0, 0)} });
-
+    if (componentA) {
+      let propsA = JSON.parse(JSON.stringify(props));
+      propsA.color = 'uniform';
+      propsA.colorParams = {value: Color.fromRgb(202, 0, 0)};
+      this.propsA = propsA;
+      this.structureA = await this.plugin.builders.structure.representation.addRepresentation(componentA, this.propsA);
+    } 
     // create chain B
     const query2 = MS.struct.generator.atomGroups({
       'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'B'])
     })
     const componentB = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query2, `Chain B` /* needs to be unique per component */);
-    if (componentB) this.structureB = await this.plugin.builders.structure.representation.addRepresentation(componentB, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(0, 200, 0)} });
+    if (componentB) {
+      let propsB = JSON.parse(JSON.stringify(props));
+      propsB.color = 'uniform';
+      propsB.colorParams = {value: Color.fromRgb(0, 200, 0)};
+      this.propsB = propsB;
+      this.structureB = await this.plugin.builders.structure.representation.addRepresentation(componentB, this.propsB);
+    } 
     // this.currentStructure =  [this.structureA, this.structureB];
 
     console.log('current structs');
-    console.log(this.currentStructure);
+    console.log(this.structureA);
     console.log(this.structureB);
     console.log(this.plugin.managers.structure.hierarchy.current.structures);
   }
@@ -145,7 +159,8 @@ export class MolstarDemoViewer {
     console.log(data);
     console.log(this.plugin.state);
 
-    await this.plugin.build().to(this.currentStructure).update(newRepresenation).commit();
+    await this.plugin.build().to(this.structureB).update(newRepresenation).commit();
+    await this.plugin.build().to(this.structureA).update(newRepresenation).commit();
   }
 
   async toggleControls (isVisible) {
@@ -153,7 +168,12 @@ export class MolstarDemoViewer {
   }
 
   async updateA(){
-    await this.plugin.build().to(this.structureA).update(createStructureRepresentationParams(this.plugin, void 0, { type: 'cartoon', color:'uniform', colorParams: {value: Color.fromRgb(0, 0, 200)}})).commit();
+    let color = Color.fromRgb(Math.random() * 100, Math.random() * 100, Math.random() * 100);
+    console.log(color);
+    this.propsA.colorParams = {value: color};
+    this.propsA.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']};
+    console.log(this.propsA);
+    await this.plugin.build().to(this.structureA).update(createStructureRepresentationParams(this.plugin, void 0, this.propsA)).commit();
   }
 
   dispose () {
