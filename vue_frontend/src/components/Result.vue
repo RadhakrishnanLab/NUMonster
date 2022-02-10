@@ -71,6 +71,7 @@
           <molviewer v-if="url_3D" class="card"
                      v-bind:pdb-file="pdbFile"
                      v-bind:cards="added_cards"
+                     v-bind:chains="[chain1, chain2]"
           > </molviewer>
       </div>
     </div>

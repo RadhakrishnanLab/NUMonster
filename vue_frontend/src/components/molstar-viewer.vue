@@ -35,10 +35,11 @@
       </b-button>
       <br />
       <attribute-card2
-        v-for="item in added_cards"
-        v-bind:chains="options"
+        v-for="item in default_cards"
+        v-bind:chains="chains"
         v-bind:synced_data.sync="item"
         v-bind:key="item.id"
+        v-on:update:synced_data="logChange(item)"
       ></attribute-card2>
     </div>
   </div>
@@ -54,14 +55,51 @@ export default {
   components: {
     attributeCard2
   },
-  props: ['pdbFile', 'cards'],
+  props: ['pdbFile', 'cards', 'chains'],
+  watch:{
+    chains: function(newVal, oldVal) { // watch it
+      console.log('Prop changed: ', newVal, ' | was: ', oldVal);
+      this.default_cards = [];
+      this.default_cards.push(
+        {chain: newVal[0],
+          color: 'cyan',
+          opacity: null,
+          type: 'model',
+          model_type: 'cartoon',
+          render: false,
+          removed: false,
+          default: true,
+          added_attributes: []
+        },
+        {chain: newVal[1],
+          color: 'pink',
+          opacity: null,
+          type: 'model',
+          model_type: 'cartoon',
+          render: false,
+          removed: false,
+          default: true,
+          added_attributes: []
+        }
+      );
+      // this.viewer.dispose();
+      this.viewer.loadStructureFromData(this.pdbFile, 'pdb', {
+        type: this.structure3dRepresentation,
+        coloring: this.structure3dColoring,
+        uniformColor: this.uniformColor },
+        this.default_cards
+      );
+      this.viewer.toggleControls(false);
+      this.viewer.cards = this.default_cards;
+    }
+  },
   data: () => ({
     structure3d: null,
     structure3dRepresentation: 'cartoon',
     structure3dColoring: 'element-symbol',
     uniformColor: { r: 51, g: 158, b: 0 },
     viewer: null,
-    added_cards: null,
+    default_cards: [],
     controls: null,
     show_nucleotide: true,
     show_stick: false
@@ -69,14 +107,34 @@ export default {
   mounted: function() {
     let viewer = new MolstarDemoViewer(this.$el.querySelector('#viewer3d'));
     this.viewer = viewer;
-    this.added_cards = this.cards;
-    console.log(this.added_cards);
     this.controls = true;
+    this.default_cards.push(
+      {chain: this.chains[0],
+        color: 'cyan',
+        opacity: null,
+        type: 'model',
+        model_type: 'cartoon',
+        render: false,
+        removed: false,
+        default: true,
+        added_attributes: []
+      },
+      {chain: this.chains[1],
+        color: 'pink',
+        opacity: null,
+        type: 'model',
+        model_type: 'cartoon',
+        render: false,
+        removed: false,
+        default: true,
+        added_attributes: []
+      });
     viewer.loadStructureFromData(this.pdbFile, 'pdb', {
       type: this.structure3dRepresentation,
       coloring: this.structure3dColoring,
-      uniformColor: this.uniformColor
-    });
+      uniformColor: this.uniformColor },
+      this.default_cards
+    );
     fetch(this.pdbFile)
       .then(function(res) {
         console.log(res);
@@ -117,6 +175,12 @@ export default {
         coloring: this.structure3dColoring,
         uniformColor: this.uniformColor
       });
+    },
+    logChange: function(change) {
+      // currently also calls reloadCards to update visual display, this function is called when card2 changes
+      // console.log("Changes:\n\n");
+      // console.log(change);
+      this.viewer.reloadCards([change]);
     }
   },
   computed: {

@@ -19,6 +19,8 @@ import {createPlugin} from 'molstar/lib/mol-plugin-ui';
 import {Color} from 'molstar/lib/mol-util/color';
 import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder';
 import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
+import { ColorNames } from 'molstar/lib/mol-util/color/names'
+import { ColorListNames, ColorListOptions } from 'molstar/lib/mol-util/color/lists';
 
 // type RepresentationParams = {
 //   type: "ball-and-stick" | "cartoon" | "putty",
@@ -63,18 +65,29 @@ export class MolstarDemoViewer {
     this.propsB = null;
     this.structureA = null;
     this.structureB = null;
+    this.structureDefault = null;
+    this.viewer_data = {};
+    this.defaultProps = null;
+    this.colorList = ColorListNames;
+    this.typeParams = {
+      'cartoon' : {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']},
+      'no_no_nucleotide' : {visuals: ['polymer-trace', 'polymer-gap']},
+      'putty' : {visuals: ['polymer-tube']}
+    };
+    this.cards = null;
   }
 
-  async loadStructureFromData (url, format, reprParams) {
+  async loadStructureFromData (url, format, reprParams, cards) {
+    this.cards = cards;
     await this.plugin.clear();
     console.log('Loading...');
     this.plugin.behaviors.layout.leftPanelTabName.next('data');
-
     const data = await this.plugin.builders.data.download({url}, { state: { isGhost: true } });
     const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);
     const model = await this.plugin.builders.structure.createModel(trajectory);
     if (!model) return;
     const structure = await this.plugin.builders.structure.createStructure(model);
+    this.structureDefault = structure;
 
     const {type, coloring, uniformColor} = reprParams;
     let props = {
@@ -89,41 +102,26 @@ export class MolstarDemoViewer {
     if (type === 'cartoon') {
       props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
     }
-    const repr = createStructureRepresentationParams(this.plugin, structure.data, props);
-    console.log('repr');
-    console.log(repr);
-    // this.currentStructure = await this.plugin.build().to(structure).apply(StateTransforms.Representation.StructureRepresentation3D, repr).commit();
+    this.defaultProps = props;
 
-    // create chain A
-    const query1 = MS.struct.generator.atomGroups({
-        'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'A'])
-    })
-    const componentA = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query1, `Chain A` /* needs to be unique per component */);
-    if (componentA) {
-      let propsA = JSON.parse(JSON.stringify(props));
-      propsA.color = 'uniform';
-      propsA.colorParams = {value: Color.fromRgb(202, 0, 0)};
-      this.propsA = propsA;
-      this.structureA = await this.plugin.builders.structure.representation.addRepresentation(componentA, this.propsA);
-    } 
-    // create chain B
-    const query2 = MS.struct.generator.atomGroups({
-      'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), 'B'])
-    })
-    const componentB = await this.plugin.builders.structure.tryCreateComponentFromExpression(structure, query2, `Chain B` /* needs to be unique per component */);
-    if (componentB) {
-      let propsB = JSON.parse(JSON.stringify(props));
-      propsB.color = 'uniform';
-      propsB.colorParams = {value: Color.fromRgb(0, 200, 0)};
-      this.propsB = propsB;
-      this.structureB = await this.plugin.builders.structure.representation.addRepresentation(componentB, this.propsB);
-    } 
-    // this.currentStructure =  [this.structureA, this.structureB];
-
-    console.log('current structs');
-    console.log(this.structureA);
-    console.log(this.structureB);
-    console.log(this.plugin.managers.structure.hierarchy.current.structures);
+    console.log('begin');
+    if (structure) {
+      cards.forEach( async card => {
+        let card_props = JSON.parse(JSON.stringify(props));
+        card_props.color = 'uniform';
+        card_props.colorParams = {value: ColorNames[card.color]};
+        const card_query = await this.queryChain(card.chain);
+        const card_component = await this.createChainComponent(structure, card_query, 'Chain' + card.chain)
+        if (card_component) { 
+          let card_structure = await this.addStructRepr(card_component, card_props);
+          this.viewer_data[card.chain] = {'query': card_query,
+          'props' : card_props,
+          'component' : card_component,
+          'structure' : card_structure
+          }
+        } 
+      });
+    }
   }
 
   async updateMoleculeRepresentation (reprParams) {
@@ -159,8 +157,11 @@ export class MolstarDemoViewer {
     console.log(data);
     console.log(this.plugin.state);
 
-    await this.plugin.build().to(this.structureB).update(newRepresenation).commit();
-    await this.plugin.build().to(this.structureA).update(newRepresenation).commit();
+    this.cards.forEach ( async card => {
+      await this.plugin.build().to(this.viewer_data[card.chain].structure).update(newRepresenation).commit();
+    });
+    // await this.plugin.build().to(this.structureB).update(newRepresenation).commit();
+    // await this.plugin.build().to(this.structureA).update(newRepresenation).commit();
   }
 
   async toggleControls (isVisible) {
@@ -168,12 +169,77 @@ export class MolstarDemoViewer {
   }
 
   async updateA(){
-    let color = Color.fromRgb(Math.random() * 100, Math.random() * 100, Math.random() * 100);
+    let color = Object.keys(ColorNames)[Math.floor (Math.random() * 100)];
     console.log(color);
-    this.propsA.colorParams = {value: color};
-    this.propsA.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']};
-    console.log(this.propsA);
-    await this.plugin.build().to(this.structureA).update(createStructureRepresentationParams(this.plugin, void 0, this.propsA)).commit();
+    this.cards[0].color = color;
+    this.reloadCards([this.cards[0]])
+  }
+
+  async reloadCards (cards) {
+    // the cards have changed and it's time to reload those changes
+    if (this.structureDefault) {
+      cards.forEach( async card => {
+        // console.log('reloadCards');
+        // console.log(card);
+        let card_props = null;
+        let card_component = null;
+        let card_query = null;
+        let exists = card.chain in this.viewer_data;
+        if (!exists){
+          card_props = JSON.parse(JSON.stringify(this.defaultProps));
+          if (card_props) {card_props.color = 'uniform';}
+          card_query = this.queryChain(card.chain);
+          card_component = await this.createChainComponent(this.structureDefault, card_query, 'Chain' + card.chain).catch(e => {
+            console.log(e);
+          });
+        } else {
+          card_props = this.viewer_data[card.chain].props;
+          card_props.colorParams = {value: ColorNames[card.color]};
+          card_component = this.viewer_data[card.chain].component;
+        }
+        if (card_component) { 
+          let card_structure = null;
+          if (exists) {
+            card_structure = this.viewer_data[card.chain].structure;
+            this.updateStruct(card_structure, card_props);
+          } else {
+            card_structure = await this.addStructRepr(card_component, card_props);
+          }
+          this.viewer_data[card.chain] = {'query': card_query,
+            'props' : card_props,
+            'component' : card_component,
+            'structure' : card_structure
+          }
+        }
+      }); 
+    }
+  }
+
+  // helper functions
+  
+  queryChain (chainID) {
+    // returns the query for the chain
+    const query = MS.struct.generator.atomGroups({
+      'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), chainID])
+    })
+    return query;
+  }
+
+  async createChainComponent (sourceStructure, query, chainName) {
+    /* chainName needs to be unique per component */ 
+    const component = this.plugin.builders.structure.tryCreateComponentFromExpression(sourceStructure, query, chainName);
+    return component;
+  }
+
+  async addStructRepr (component, props) {
+    // this visualizes the component created with the properties in props
+    const structure = this.plugin.builders.structure.representation.addRepresentation(component, props);
+    return structure;
+  }
+
+  async updateStruct(struct, props){
+    // update a previous struct using props
+    this.plugin.build().to(struct).update(createStructureRepresentationParams(this.plugin, void 0, props)).commit();
   }
 
   dispose () {
