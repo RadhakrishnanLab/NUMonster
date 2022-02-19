@@ -129,13 +129,9 @@ export class MolstarDemoViewer {
     const {type, coloring, uniformColor} = reprParams;
     let props = {
       type: type,
-      // color: coloring,
       size: 'uniform',
       sizeParams: {value: 2.0}
     }
-    // if (coloring === 'uniform') {
-    //   props.colorParams = {value: Color.fromRgb(uniformColor.r, uniformColor.g, uniformColor.b)}
-    // }
     console.log(type);
     if (type === 'cartoon') {
       props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
@@ -143,25 +139,18 @@ export class MolstarDemoViewer {
     if (type === 'no_nucleotide') {
       props.typeParams = {visuals: ['polymer-trace', 'polymer-gap']}
       props.type = 'cartoon';
-      console.log('here');
     }
     if (type === 'putty') {
       props.typeParams = {visuals: ['polymer-tube']}
     }
-    console.log('there');
-    const newRepresenation = createStructureRepresentationParams(this.plugin, void 0, props);
-    console.log(`Trying to update structure 3D Representation to ${type}`)
-    console.log(InteractionsProvider);
-    const data = this.plugin.managers.structure.hierarchy;
-    console.log('data');
-    console.log(data);
-    console.log(this.plugin.state);
-
     this.cards.forEach ( async card => {
-      await this.plugin.build().to(this.viewer_data[card.chain].structure).update(newRepresenation).commit();
+      let card_props = this.viewer_data[card.chain].props;
+      card_props.type = props.type;
+      card_props.typeParams = props.typeParams;
+      this.viewer_data[card.chain].props = card_props;
+      let card_structure = this.viewer_data[card.chain].structure;
+      await this.updateStruct(card_structure, card_props);
     });
-    // await this.plugin.build().to(this.structureB).update(newRepresenation).commit();
-    // await this.plugin.build().to(this.structureA).update(newRepresenation).commit();
   }
 
   async toggleControls (isVisible) {

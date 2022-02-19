@@ -603,7 +603,8 @@ export default {
               singleHover: true,
               labelAlignment: 'top',
               defaultLabelAlignment: 'top',
-              labelThreshold: 0
+              labelThreshold: 0,
+              zoomingRatio: 1
             }
           });
           this.s.bind('overNode', e => {
