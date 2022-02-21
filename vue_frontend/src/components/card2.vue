@@ -5,27 +5,37 @@
           <b-button-close v-on:click="removeItem()" class="btn"></b-button-close>
         </div>
         <div class="level">
-            <b-container class="bv-example-row">
+          <b-container class="bv-example-row">
             <!-- <b-row>
                 <b-form-select
                     v-model="selected_chain" :options="chains" @change="$emit('update:synced_data', update());" >Select A Chain
                 </b-form-select>
             </b-row> -->
             <b-row v-if="type === 'model'">
-               <b-form-select disabled='disabled'
-                   v-model="model_type" :options="styles" @change="update_model_type();" >Pick Style
-               </b-form-select>
+              <b-form-select
+                v-model="model_type" :options="styles" @change="update_model_type();" >Pick Style
+              </b-form-select>
             </b-row>
             <b-row v-if="type === 'model'">
-                <b-form-select
-                   v-model="color" :options="color_options" @change="$emit('update:synced_data', update());" >Pick Color
-               </b-form-select>
+              <b-form-select
+                v-model="color" :options="color_options" @change="$emit('update:synced_data', update());" >Pick Color
+              </b-form-select>
+            </b-row>
+            <b-row v-if="type === 'model'" class="opacity">
+              <b-col>
+                <div >Opacity: {{ opacity }}</div>
+              </b-col>
+              <b-col>
+                <b-form-input
+                  placeholder="Opacity" v-model="opacity" type='range' min="0" max="1" step="0.1" @change="$emit('update:synced_data', update());">
+                </b-form-input>
+              </b-col>
             </b-row>
 <!--            <b-row v-if="type === 'surface'">-->
 <!--                <b-col class="p-0">-->
-<!--                    <b-form-input -->
-<!--                        placeholder="Opacity" v-model.number="opacity" type='number' min="0" max="1" step="0.1" @change="$emit('update:synced_data', update());">-->
-<!--                    </b-form-input>-->
+                   <!-- <b-form-input
+                       placeholder="Opacity" v-model.number="opacity" type='number' min="0" max="1" step="0.1" @change="$emit('update:synced_data', update());">
+                   </b-form-input> -->
 <!--                </b-col>-->
 <!--                <b-col class="p-0">-->
 <!--                    <b-form-input-->
@@ -38,28 +48,28 @@
 <!--                    v-model="color_scheme" :options="color_scheme_options" @change="$emit('update:synced_data', update());" >-->
 <!--                </b-form-select>-->
 <!--            </b-row>-->
-              <b-row
-                v-for="item in added_attributes"
-                v-bind:key="item.id">
-                <b-col class="p-0">
-                  <b-form-select disabled='disabled'
-                      v-model="item.selected_attribute" :options="valid_attributes_options" @change="recalcAttributes(item);" >
-                  </b-form-select>
-                </b-col>
-                <b-col v-if="!item.discrete" class="p-0">
-                  <b-form-input disabled='disabled'
-                    placeholder="Value" v-model.number="item.value" @change="$emit('update:synced_data', update());">
-                  </b-form-input>
-                </b-col>
-                <b-col v-if="item.discrete" class="p-0">
-                  <b-form-select disabled='disabled'
-                    v-model="item.value" :options="item.valid_values" @change="$emit('update:synced_data', update());">
-                  </b-form-select>
-                </b-col>
-              <b-button-close v-on:click="removeAttribute(item.id)" class="btn" style="width: 25px"></b-button-close>
-              </b-row>
-            </b-container>
-           <b-button disabled='disabled' v-if="type ==='model'" type='button' variant='outline' class='btn-primary btn-block' v-on:click='addAttribute'> Add Attribute </b-button>
+            <!-- <b-row
+              v-for="item in added_attributes"
+              v-bind:key="item.id">
+              <b-col class="p-0">
+                <b-form-select disabled='disabled'
+                  v-model="item.selected_attribute" :options="valid_attributes_options" @change="recalcAttributes(item);" >
+                </b-form-select>
+              </b-col>
+              <b-col v-if="!item.discrete" class="p-0">
+                <b-form-input disabled='disabled'
+                  placeholder="Value" v-model.number="item.value" @change="$emit('update:synced_data', update());">
+                </b-form-input>
+              </b-col>
+              <b-col v-if="item.discrete" class="p-0">
+                <b-form-select disabled='disabled'
+                  v-model="item.value" :options="item.valid_values" @change="$emit('update:synced_data', update());">
+                </b-form-select>
+              </b-col>
+            <b-button-close v-on:click="removeAttribute(item.id)" class="btn" style="width: 25px"></b-button-close>
+            </b-row> -->
+          </b-container>
+          <!-- <b-button disabled='disabled' v-if="type ==='model'" type='button' variant='outline' class='btn-primary btn-block' v-on:click='addAttribute'> Add Attribute </b-button> -->
         </div>
     </div>
 </template>
@@ -91,12 +101,18 @@ export default {
       removed: false,
       surface: null,
       styles: [
-        {id: 0, value: null, text: 'Select a style'},
-        {id: 1, value: 'stick', text: 'stick'},
+        {id: 0, value: null, text: 'Select a style', disabled: true},
+        {id: 1, value: 'ball-and-stick', text: 'ball-and-stick'},
         {id: 2, value: 'cartoon', text: 'cartoon'},
         {id: 3, value: 'line', text: 'line'},
-        {id: 4, value: 'sphere', text: 'sphere'},
-        {id: 5, value: 'cross', text: 'cross'}
+        {id: 4, value: 'ellipsoid', text: 'ellipsoid'},
+        {id: 5, value: 'label', text: 'label'},
+        {id: 6, value: 'point', text: 'point'},
+        {id: 7, value: 'putty', text: 'putty'},
+        {id: 8, value: 'gaussian-volume', text: 'gaussian-volume'},
+        {id: 9, value: 'gaussian-surface', text: 'gaussian-surface'},
+        {id: 10, value: 'spacefill', text: 'spacefill'},
+        {id: 11, value: 'molecular-surface', text: 'molecular-surface'},
       ],
       color_options: Object.keys(ColorNames),
       color_scheme_options: [],
@@ -229,4 +245,14 @@ export default {
     padding: 7px;
     padding-left: 20px;
 }
+
+.opacity{
+  padding: 3px;
+  white-space: nowrap;
+}
+
+/* b-row {
+  align-items: center;
+  vertical-align: auto;
+} */
 </style>

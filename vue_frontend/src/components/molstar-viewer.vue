@@ -58,12 +58,12 @@ export default {
   props: ['pdbFile', 'cards', 'chains'],
   watch:{
     chains: function(newVal, oldVal) { // watch it
-      console.log('Prop changed: ', newVal, ' | was: ', oldVal);
+      // console.log('Prop changed: ', newVal, ' | was: ', oldVal);
       this.default_cards = [];
       this.default_cards.push(
         {chain: newVal[0],
           color: 'cyan',
-          opacity: null,
+          opacity: 1,
           type: 'model',
           model_type: 'cartoon',
           render: false,
@@ -73,7 +73,7 @@ export default {
         },
         {chain: newVal[1],
           color: 'pink',
-          opacity: null,
+          opacity: 1,
           type: 'model',
           model_type: 'cartoon',
           render: false,
@@ -111,7 +111,7 @@ export default {
     this.default_cards.push(
       {chain: this.chains[0],
         color: 'cyan',
-        opacity: null,
+        opacity: 1,
         type: 'model',
         model_type: 'cartoon',
         render: false,
@@ -121,7 +121,7 @@ export default {
       },
       {chain: this.chains[1],
         color: 'pink',
-        opacity: null,
+        opacity: 1,
         type: 'model',
         model_type: 'cartoon',
         render: false,

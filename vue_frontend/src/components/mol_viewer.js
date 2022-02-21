@@ -7,9 +7,9 @@ import {
   createStructureRepresentationParams,
   // StructureRepresentationBuiltInProps
 } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
-import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
+// import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
-import { InteractionsProvider } from 'molstar/lib/mol-model-props/computed/interactions';
+// import { InteractionsProvider } from 'molstar/lib/mol-model-props/computed/interactions';
 // import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {
   DefaultPluginUISpec,
@@ -18,7 +18,7 @@ import {
 import {createPlugin} from 'molstar/lib/mol-plugin-ui';
 import {Color} from 'molstar/lib/mol-util/color';
 import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder';
-import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
+// import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
 import { ColorNames } from 'molstar/lib/mol-util/color/names'
 import { ColorListNames, ColorListOptions } from 'molstar/lib/mol-util/color/lists';
 
@@ -83,7 +83,9 @@ export class MolstarDemoViewer {
     console.log('Loading...');
     this.plugin.behaviors.layout.leftPanelTabName.next('data');
     const data = await this.plugin.builders.data.download({url}, { state: { isGhost: true } });
-    const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);
+    // console.log(data);
+    // console.log(format);
+    const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);   
     const model = await this.plugin.builders.structure.createModel(trajectory);
     if (!model) return;
     const structure = await this.plugin.builders.structure.createStructure(model);
@@ -104,7 +106,7 @@ export class MolstarDemoViewer {
     }
     this.defaultProps = props;
 
-    console.log('begin');
+    // console.log('begin');
     if (structure) {
       cards.forEach( async card => {
         let card_props = JSON.parse(JSON.stringify(props));
@@ -184,6 +186,11 @@ export class MolstarDemoViewer {
         } else {
           card_props = this.viewer_data[card.chain].props;
           card_props.colorParams = {value: ColorNames[card.color]};
+          card_props.type = card.model_type;
+          if (card_props.type === 'putty') {
+            card_props.typeParams = {visuals: ['polymer-tube']}
+          };
+          card_props.typeParams.alpha = card.opacity;
           card_component = this.viewer_data[card.chain].component;
         }
         if (card_component) { 
