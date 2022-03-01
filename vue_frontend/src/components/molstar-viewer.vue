@@ -26,13 +26,13 @@
       >
         Toggle Sticks
       </b-button>
-      <b-button
+      <!-- <b-button
         type="button"
         class="btn btn-secondary btn-block"
         v-on:click="updateA"
       >
         updateA
-      </b-button>
+      </b-button> -->
       <br />
       <attribute-card2
         v-for="item in default_cards"
@@ -148,9 +148,9 @@ export default {
       this.controls = !this.controls;
       this.viewer.toggleControls(this.controls);
     },
-    updateA: function(){
-      this.viewer.updateA();
-    },
+    // updateA: function(){
+    //   this.viewer.updateA();
+    // },
     toggleNucleotide: function() {
       this.show_nucleotide = !this.show_nucleotide;
       if (!this.show_nucleotide) {
@@ -181,6 +181,16 @@ export default {
       // console.log("Changes:\n\n");
       // console.log(change);
       this.viewer.reloadCards([change]);
+    },
+    focusOn: function(item){
+      // console.log(item);
+      let chainID = item.replace(/[^a-z]/gi, '');
+      let index = item.replace( /^\D+/g, '');
+      // console.log(chainID);
+      // console.log(index);
+      let query = this.viewer.queryResidue(index, chainID);
+      console.log(query);
+      // this.viewer.changeFocus(query);
     }
   },
   computed: {

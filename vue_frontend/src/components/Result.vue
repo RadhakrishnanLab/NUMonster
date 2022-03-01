@@ -72,6 +72,7 @@
                      v-bind:pdb-file="pdbFile"
                      v-bind:cards="added_cards"
                      v-bind:chains="[chain1, chain2]"
+                     ref="molviewer"
           > </molviewer>
       </div>
     </div>
@@ -179,6 +180,7 @@ export default {
     s: undefined,
     hover_sphere: null,
     hover_style: null,
+    last_selected_node: null,
   }),
   mounted: function () {
     let mol_js = document.createElement('script');
@@ -462,6 +464,7 @@ export default {
             y: 0,
             size: 1,
             color: 'cyan',
+            original_color: 'cyan',
             index: source_index,
             direction: 'up',
             sigma_label: `${s_res_name}${source.substr(1)} ${source.charAt(0)}`,
@@ -485,6 +488,7 @@ export default {
             y: 40,
             size: 1,
             color: 'pink',
+            original_color: 'pink',
             index: target_index,
             direction: 'down',
             sigma_label: `${t_res_name}${target.substr(1)} ${target.charAt(0)}`,
@@ -626,6 +630,25 @@ export default {
             this.$el.querySelector('#more-info').innerHTML = `<span> Residue: ${e.data.edge.source_label}, Area: ${e.data.edge.source_area}, Percent: ${e.data.edge.source_pct}</span>`;
             this.$el.querySelector('#more-info').innerHTML += '<br>';
             this.$el.querySelector('#more-info').innerHTML += `<span> Residue: ${e.data.edge.target_label}, Area: ${e.data.edge.target_area}, Percent: ${e.data.edge.target_pct}</span>`;
+          });
+          this.s.bind('clickNode', e => {
+            const node = e.data.node;
+            if (!node.selected) {
+              this.$refs.molviewer.focusOn(node.id);
+              node.selected = true;
+              node.color = 'green';
+              if (this.last_selected_node) {
+                this.last_selected_node.selected = false;
+                this.last_selected_node.color = this.last_selected_node.original_color;
+              }
+              this.last_selected_node = node;
+            } else {
+              node.selected = false;
+              node.color = node.original_color;
+              this.last_selected_node = null;
+            };
+            // console.log(node);
+            this.s.refresh();
           });
           this.s.settings({
             drawLabels: true,

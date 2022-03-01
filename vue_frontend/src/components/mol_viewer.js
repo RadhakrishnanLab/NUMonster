@@ -7,7 +7,7 @@ import {
   createStructureRepresentationParams,
   // StructureRepresentationBuiltInProps
 } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
-// import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
+import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 // import { InteractionsProvider } from 'molstar/lib/mol-model-props/computed/interactions';
 // import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
@@ -21,6 +21,8 @@ import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder'
 // import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
 import { ColorNames } from 'molstar/lib/mol-util/color/names'
 import { ColorListNames, ColorListOptions } from 'molstar/lib/mol-util/color/lists';
+import { Script } from 'molstar/lib/mol-script/script';
+import { StructureSelection } from 'molstar/lib/mol-model/structure/query';
 
 // type RepresentationParams = {
 //   type: "ball-and-stick" | "cartoon" | "putty",
@@ -67,6 +69,7 @@ export class MolstarDemoViewer {
     this.structureB = null;
     this.structureDefault = null;
     this.viewer_data = {};
+    this.originalData = null;
     this.defaultProps = null;
     this.colorList = ColorListNames;
     this.typeParams = {
@@ -77,12 +80,23 @@ export class MolstarDemoViewer {
     this.cards = null;
   }
 
+  /* 
+  Description:
+    Uses the url and format to download the raw data, then uses repParams and cards to create the 3d model
+  Args:
+    url - pdb url for the structure
+    format - string text describing the format of the file to be downloaded, probably 'pdb'
+    reprParams - the set of default params to be applied over all cards
+    cards - the dictionaries containing basic information about the chains
+  Output: 
+  */ 
   async loadStructureFromData (url, format, reprParams, cards) {
     this.cards = cards;
     await this.plugin.clear();
     console.log('Loading...');
     this.plugin.behaviors.layout.leftPanelTabName.next('data');
     const data = await this.plugin.builders.data.download({url}, { state: { isGhost: true } });
+    this.originalData = data;
     // console.log(data);
     // console.log(format);
     const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);   
@@ -126,6 +140,7 @@ export class MolstarDemoViewer {
     }
   }
 
+  // currently only used for toggle nucleotide button
   async updateMoleculeRepresentation (reprParams) {
     // eslint-disable-next-line no-unused-vars
     const {type, coloring, uniformColor} = reprParams;
@@ -155,17 +170,20 @@ export class MolstarDemoViewer {
     });
   }
 
+  // toggles the control pannel, used by the toggle button
   async toggleControls (isVisible) {
     await PluginCommands.Layout.Update(this.plugin, { state: { showControls: isVisible } });
   }
 
+  // updates chainA with a random color
   async updateA(){
     let color = Object.keys(ColorNames)[Math.floor (Math.random() * 100)];
-    console.log(color);
+    // console.log(color);
     this.cards[0].color = color;
     this.reloadCards([this.cards[0]])
   }
 
+  // after the card components have been updated, this function uses the news values from the cards to update the data inside of the molstar viewer
   async reloadCards (cards) {
     // the cards have changed and it's time to reload those changes
     if (this.structureDefault) {
@@ -211,8 +229,38 @@ export class MolstarDemoViewer {
     }
   }
 
-  // helper functions
-  
+  // changes focus
+  changeFocus (focus) {
+    this.plugin.managers.focus.setFromLoci(focus);
+  }
+
+  // Below are some helper functions
+  queryResidue (resID, chainID) {
+    // returns the query for the chain
+    const query = MS.struct.generator.atomGroups({
+      'residue-test': MS.core.logic.and([
+        MS.core.rel.eq([MS.ammp("auth_asym_id"), chainID]),
+        MS.core.set.has([MS.set(parseInt(resID)), MS.ammp('auth_seq_id')]),
+      ])
+    })
+    const data = this.plugin.managers.structure.hierarchy.current.structures[0].cell.obj.data;
+    // console.log(data)
+    const selection = Script.getStructureSelection(query, data);
+    const loci = StructureSelection.toLociWithSourceUnits(selection);
+    // console.log('loci');
+    // console.log(loci);
+    // const current = this.plugin.managers.structure.focus;
+    // console.log(current);
+
+    // this part sets the focus
+    this.plugin.managers.structure.focus.clear();
+    this.plugin.managers.structure.focus.addFromLoci(loci);
+    this.plugin.managers.camera.focusLoci(loci);
+    return query;
+  }
+
+
+
   queryChain (chainID) {
     // returns the query for the chain
     const query = MS.struct.generator.atomGroups({
