@@ -3,26 +3,40 @@
     <div v-if="display_label" class="card">
       <div class="card-header">
         <span>{{display_label}}</span>
-        <b-button-close v-on:click="closeDisplay()" class="btn"></b-button-close>
+        <!-- <b-button-close v-on:click="closeDisplay()" class="btn"></b-button-close> -->
       </div>
       <div v-if="display_graph" class="row card-body">
         <div  class="col-10">
           <div id="graph-container" class="display-container"></div>
         </div>
         <div class="col-2">
-          <br/>
           <div id="color-table">
             <h5>Filter Edges</h5>
             <!--<br/>
             <vue-slider v-model="dist_filter" :max=15 lazy=True @change="renderGraph"></vue-slider>-->
-            <div v-for='edge in all_edges' :key='edge.id' @change="renderGraph" class='form-check'>
-              <input type='checkbox' v-model='selected_edges' :value='edge.id' class='form-check-input'/>
-              <label v-bind:style="{color: edge.color, 'background-color': 'transparent'}" class='form-check-label'>
-                {{ edge.name }}
-              </label>
+            <div v-for='edge in all_edges' :key='edge.id' class='form-check'>
+              <div class='parent'>
+                <div class='child'>
+                <input type='checkbox' v-model='selected_edges' :value='edge.id' @change="renderGraph" class='form-check-input'/>
+                <label v-bind:style="{color: edge.color, 'background-color': 'transparent'}" class='form-check-label'>
+                  {{ edge.name }}
+                </label>
+                </div>
+                <!-- <template> -->
+                <div class='child'>
+                  <b-form-input id="distance_value" v-model="edge.value" type="range" :min="edge.min" :max="edge.max" step='0.1'></b-form-input>
+                </div>
+                <div class='child' id='child1'>
+                  {{edge.value}} Å
+                </div>
+                <!-- </template> -->
+              </div>
             </div>
           </div>
-          <br/>
+        <div class="parent2">
+          <b-button type='button' class='btn btn-secondary btn-block' v-on:click='renderGraph'>Update Filter</b-button>
+          <b-button type='button' class='btn btn-secondary btn-block' v-on:click='savePic2D'> Save Picture </b-button>
+        </div>
           <h5>Info</h5>
           <div id="more-info">
             <!-- {{selected_info}} -->
@@ -34,8 +48,12 @@
       </div>
     </div>
     <div v-if="url_3D" class="card" id="target-box">
+      <div class = "text-right">
+      <b-button v-b-toggle.collapse class="btn">Close</b-button>
+      </div>
+      <b-collapse visible id="collapse">
         <div v-if="display_graph" class="row card-body">
-          <div  class="col-10">
+          <div  class="col-10" id="screenshot">
             <div v-if="url_3D" id="container-01" class="mol-container"></div>
           </div>
           <div class="col-2">
@@ -63,19 +81,30 @@
             </div>
           </div>
         </div>
+      </b-collapse>
     </div>
-<!--    <div v-if="url_3D" class="card" id="target-box2">-->
-<!--    </div>-->
+
     <div v-if="url_3D" class="card" id="target-box3">
-      <div v-if="display_graph">
+      <div class = "text-right">
+       <b-button v-b-toggle.collapse-1 class="btn">Close</b-button>
+      </div>
+      <b-collapse visible id="collapse-1">
+        <!-- <div v-if="display_graph" id="molstar-block">
+            <molviewer v-if="url_3D" class="card"
+                      v-bind:pdb-file="pdbFile"
+                      v-bind:cards="added_cards"
+            > </molviewer> -->
+        <div v-if="display_graph">
           <molviewer v-if="url_3D" class="card"
                      v-bind:pdb-file="pdbFile"
                      v-bind:cards="added_cards"
                      v-bind:chains="[chain1, chain2]"
-                     ref="molviewer"
-          > </molviewer>
-      </div>
+                     ref="molviewer">
+          </molviewer>
+        </div>
+      </b-collapse>
     </div>
+
     <br/>
     <h3>
       Results for {{$route.params.job_id}}
@@ -125,17 +154,20 @@
 
 <script>
 import vueSlider from 'vue-slider-component';
-import ButtonClose from 'bootstrap-vue';
+import {ButtonClose, BCollapse} from 'bootstrap-vue';
 import attributeCard from './card.vue';
 import attributeCard2 from './card2';
 import { Viewer } from 'molstar/build/viewer/molstar';
 import 'molstar/build/viewer/molstar.css';
 import molviewer from './molstar-viewer';
+// import html2canvas from 'html2canvas';
+// import('sigma/build/plugins/sigma.renderers.snapshot.min');
 
 export default {
   name: 'Result',
   components: {
     ButtonClose,
+    BCollapse,
     vueSlider,
     attributeCard,
     attributeCard2,
@@ -165,10 +197,10 @@ export default {
       15
     ],
     all_edges: {
-      HYDPHB: {id: 'HYDPHB', name: 'Hydrophobic', color: '#808080'},
-      ELCSTA: {id: 'ELCSTA', name: 'Electrostatic', color: '#008800'},
-      HYBOND: {id: 'HYBOND', name: 'Hydrogen Bond', color: '#880000'},
-      SLTBDG: {id: 'SLTBDG', name: 'Salt Bridge', color: '#6e0088'},
+      HYDPHB: {id: 'HYDPHB', name: 'Hydrophobic', color: '#808080', min: '1', max: '5', value: '4'},
+      ELCSTA: {id: 'ELCSTA', name: 'Electrostatic', color: '#008800', min: '0', max: '8', value: '5'},
+      HYBOND: {id: 'HYBOND', name: 'Hydrogen Bond', color: '#880000', min: '1', max: '5', value: '3.5'},
+      SLTBDG: {id: 'SLTBDG', name: 'Salt Bridge', color: '#6e0088', min: '0', max: '5', value: '3.5'},
     },
     amino_acid: {
       ALA: 'A', ARG: 'R', ASN: 'N', ASP: 'D', CYS: 'C', GLN: 'Q', GLU: 'E', // eslint-disable-line
@@ -592,6 +624,7 @@ export default {
         setTimeout(() => {
           this.s = new sigma({ // eslint-disable-line
             renderer: {
+              id: 'screenshot',
               container: document.getElementById('graph-container'),
               type: 'canvas'
             },
@@ -662,32 +695,49 @@ export default {
       // this.open3D(pdbFile, chain1, chain2, parsed_xml);
     },
     renderGraph: function () {
-      // console.log('starting render');
+      console.log('starting render');
       if (!this.s) { return }
       let graph = this.extractParsedXML(this.open_xml, this.selected_edges);
+      let graph_filtered = {'nodes': [], 'edges': []};
+      let relevant_nodes = new Set()
       for (let i = 0; i < graph.edges.length; i++) {
         let bond = graph.edges[i];
-        let id1 = bond.id;
-        let source = bond.source;
-        let target = bond.target;
-        for (let x = 0; x < graph.edges.length; x++) {
-          let bond2 = graph.edges[x];
-          let id2 = bond2.id;
-          let source2 = bond2.source;
-          let target2 = bond2.target;
-          if (id2 !== id1 && (((source === source2) && (target === target2)) || ((source === target2) && (target === source2)))) {
-            if (!bond.added.includes(id2)) {
-              bond.added.push(id2);
-              bond2.added.push(id1);
+        // console.log(bond.dist);
+        // console.log(this.all_edges[bond.type].value);
+        if (bond.dist <= this.all_edges[bond.type].value) {
+          // console.log(bond);
+          let id1 = bond.id;
+          let source = bond.source;
+          let target = bond.target;
+          for (let x = 0; x < graph.edges.length; x++) {
+            let bond2 = graph.edges[x];
+            let id2 = bond2.id;
+            let source2 = bond2.source;
+            let target2 = bond2.target;
+            if (id2 !== id1 && (((source === source2) && (target === target2)) || ((source === target2) && (target === source2)))) {
+              if (!bond.added.includes(id2)) {
+                bond.added.push(id2);
+                bond2.added.push(id1);
+              }
             }
           }
+          graph_filtered.edges.push(bond);
+          relevant_nodes.add(bond.source);
+          relevant_nodes.add(bond.target);
         }
       }
+      for (let i = 0; i < graph.nodes.length; i++) {
+        let node = graph.nodes[i];
+        if (relevant_nodes.has(node.id)) {
+          graph_filtered['nodes'].push(node);
+        }
+      }
+
       this.s.graph.clear();
-      this.s.graph.read(graph);
+      this.s.graph.read(graph_filtered);
       this.s.refresh();
-      this.graph = graph;
-      this.open3D(this.pdbFile, this.chain1, this.chain2, this.open_xml, graph);
+      this.graph = graph_filtered;
+      this.open3D(this.pdbFile, this.chain1, this.chain2, this.open_xml, graph_filtered);
     },
     savePic: function () {
       if (confirm('Save image of 3D model?')) {
@@ -701,6 +751,27 @@ export default {
         link.click();
         document.body.removeChild(link);
       }
+    },
+    savePic2D: function () {
+      if (confirm('Save image of 2D interaction map?')) {
+        var canvas = document.getElementsByClassName('sigma-scene')[0];
+        const context = canvas.getContext('2d');
+        context.save();
+        context.globalCompositeOperation = 'destination-over';
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+        console.log('LOGGING...');
+        console.log(canvas);
+        var filename = '2dgraph.png';
+        var Img = canvas.toDataURL();
+        var link = document.createElement('a');
+        link.href = Img;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
     },
     hideResLabels: function () {
       if (this.draw_labels) {
@@ -833,16 +904,29 @@ export default {
     min-width: 97%;
   }
   .col-10{
-    max-width: calc(100% - 250px);
+    max-width: calc(100% - 310px);
     padding: 0px;
     height: 80vh;
   }
   .col-2{
-    min-width: 250px;
+    min-width: 310px;
     height: 80vh;
     padding: 5px;
     display: flex;
     flex-direction: column;
+  }
+  .parent{
+    display: grid;
+    grid-template-columns: 1fr 1fr 0.4fr;
+  }
+  .child {
+    padding: 1.1px;
+  }
+  #child1 {
+    text-align: center;
+  }
+  .parent2{
+    padding: 10px;
   }
   .mol-container {
     width: 100%;
@@ -864,6 +948,9 @@ export default {
   }
   #target-box2, #target-box3{
     margin-top: 30px;
+    /* min-height: 80vh; */
+  }
+  #molstar-block{
     min-height: 80vh;
   }
   #more-info, #related-info, #added-surfaces, #added-surfaces2 {
