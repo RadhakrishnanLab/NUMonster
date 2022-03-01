@@ -127,7 +127,7 @@ export class MolstarDemoViewer {
     console.log(`Trying to update structure 3D Representation to ${type}`)
     console.log(InteractionsProvider);
     const data = this.plugin.managers.structure.hierarchy;
-    console.log('data');   
+    console.log('data');
     console.log(data);
     console.log(this.plugin.state);
 
