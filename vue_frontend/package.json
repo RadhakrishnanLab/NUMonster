@@ -13,13 +13,16 @@
     "deploy-prod": "rsync -ravz ./dist/ jjeffryes@numonster.northwestern.edu:/var/www/html/"
   },
   "dependencies": {
-    "3dmol": "^1.6.1",
+    "3dmol": "^1.8.0",
     "bootstrap": "^4.6.0",
     "bootstrap-vue": "^2.21.2",
     "dotenv-webpack": "^1.8.0",
+    "html2canvas": "^1.4.1",
     "jquery": "^3.5.1",
+    "molstar": "^2.0.5",
     "sigma": "github:xiaojoey/sigma.js",
     "vee-validate": "^2.2.15",
+    "vue-hooks": "^0.3.2",
     "vue-resource": "^1.5.1",
     "vue-router": "^3.4.9",
     "vue-slider-component": "^2.8.16"
@@ -38,7 +41,7 @@
     "chalk": "^2.4.2",
     "copy-webpack-plugin": "^5.1.2",
     "css-loader": "^3.6.0",
-    "eslint": "^4.15.0",
+    "eslint": "4.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-friendly-formatter": "^3.0.0",
     "eslint-loader": "^2.2.1",
