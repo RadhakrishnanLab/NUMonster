@@ -137,7 +137,9 @@ export default {
     );
     fetch(this.pdbFile)
       .then(function(res) {
-        console.log(res);
+        if (res) {
+          console.log('pdb loaded');
+        }
       })
       .catch(function(e) {
         console.error(e);
@@ -189,7 +191,9 @@ export default {
       // console.log(chainID);
       // console.log(index);
       let query = this.viewer.queryResidue(index, chainID);
-      console.log(query);
+      if (query) {
+        console.log('Now focusing on the selected residue!');
+      }
       // this.viewer.changeFocus(query);
     }
   },

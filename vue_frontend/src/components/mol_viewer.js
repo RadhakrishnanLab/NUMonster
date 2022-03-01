@@ -99,44 +99,47 @@ export class MolstarDemoViewer {
     this.originalData = data;
     // console.log(data);
     // console.log(format);
-    const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);   
-    const model = await this.plugin.builders.structure.createModel(trajectory);
-    if (!model) return;
-    const structure = await this.plugin.builders.structure.createStructure(model);
-    this.structureDefault = structure;
+    try {
+      const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);   
+      const model = await this.plugin.builders.structure.createModel(trajectory);
+      if (!model) return;
+      const structure = await this.plugin.builders.structure.createStructure(model);
+      this.structureDefault = structure;
 
-    const {type, coloring, uniformColor} = reprParams;
-    let props = {
-      type: type,
-      // color: coloring,
-      size: 'uniform',
-      sizeParams: {value: 2.0}
-    }
-    if (coloring === 'uniform') {
-      props.colorParams = {value: Color.fromRgb(uniformColor.r, uniformColor.g, uniformColor.b)}
-    }
-    if (type === 'cartoon') {
-      props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
-    }
-    this.defaultProps = props;
-
-    // console.log('begin');
-    if (structure) {
-      cards.forEach( async card => {
-        let card_props = JSON.parse(JSON.stringify(props));
-        card_props.color = 'uniform';
-        card_props.colorParams = {value: ColorNames[card.color]};
-        const card_query = await this.queryChain(card.chain);
-        const card_component = await this.createChainComponent(structure, card_query, 'Chain' + card.chain)
-        if (card_component) { 
-          let card_structure = await this.addStructRepr(card_component, card_props);
-          this.viewer_data[card.chain] = {'query': card_query,
-          'props' : card_props,
-          'component' : card_component,
-          'structure' : card_structure
-          }
-        } 
-      });
+      const {type, coloring, uniformColor} = reprParams;
+      let props = {
+        type: type,
+        // color: coloring,
+        size: 'uniform',
+        sizeParams: {value: 2.0}
+      }
+      if (coloring === 'uniform') {
+        props.colorParams = {value: Color.fromRgb(uniformColor.r, uniformColor.g, uniformColor.b)}
+      }
+      if (type === 'cartoon') {
+        props.typeParams = {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']}
+      }
+      this.defaultProps = props;
+      // console.log('begin');
+      if (structure) {
+        cards.forEach( async card => {
+          let card_props = JSON.parse(JSON.stringify(props));
+          card_props.color = 'uniform';
+          card_props.colorParams = {value: ColorNames[card.color]};
+          const card_query = await this.queryChain(card.chain);
+          const card_component = await this.createChainComponent(structure, card_query, 'Chain' + card.chain)
+          if (card_component) { 
+            let card_structure = await this.addStructRepr(card_component, card_props);
+            this.viewer_data[card.chain] = {'query': card_query,
+            'props' : card_props,
+            'component' : card_component,
+            'structure' : card_structure
+            }
+          } 
+        });
+      }
+    } catch (error) {
+      // console.log(error);
     }
   }
 

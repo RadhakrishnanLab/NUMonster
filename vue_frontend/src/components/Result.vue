@@ -49,11 +49,11 @@
     </div>
     <div v-if="url_3D" class="card" id="target-box">
       <div class = "text-right">
-      <b-button v-b-toggle.collapse class="btn">Close</b-button>
+      <b-button v-b-toggle.collapse class="btn">Toggle</b-button>
       </div>
       <b-collapse visible id="collapse">
         <div v-if="display_graph" class="row card-body">
-          <div  class="col-10" id="screenshot">
+          <div  class="col-10">
             <div v-if="url_3D" id="container-01" class="mol-container"></div>
           </div>
           <div class="col-2">
@@ -86,7 +86,7 @@
 
     <div v-if="url_3D" class="card" id="target-box3">
       <div class = "text-right">
-       <b-button v-b-toggle.collapse-1 class="btn">Close</b-button>
+       <b-button v-b-toggle.collapse-1 class="btn">Toggle</b-button>
       </div>
       <b-collapse visible id="collapse-1">
         <!-- <div v-if="display_graph" id="molstar-block">
@@ -624,7 +624,7 @@ export default {
         setTimeout(() => {
           this.s = new sigma({ // eslint-disable-line
             renderer: {
-              id: 'screenshot',
+              // id: 'screenshot',
               container: document.getElementById('graph-container'),
               type: 'canvas'
             },
@@ -656,8 +656,10 @@ export default {
             this.$el.querySelector('#related-info').innerHTML += currentBond + '<br>';
             for (const id of edge.added) {
               let related_edge = this.s.renderers[0].edgesOnScreen.find(x => x.id === id);
-              let related_info = `<span style="color:${related_edge.color}">${related_edge.source_label}:${related_edge.source_atom}<-${related_edge.dist}->${related_edge.target_label}:${related_edge.target_atom}</span>`;
-              this.$el.querySelector('#related-info').innerHTML += related_info + '<br>';
+              if (related_edge) {
+                let related_info = `<span style="color:${related_edge.color}">${related_edge.source_label}:${related_edge.source_atom}<-${related_edge.dist}->${related_edge.target_label}:${related_edge.target_atom}</span>`;
+                this.$el.querySelector('#related-info').innerHTML += related_info + '<br>';
+              }
             }
             // this.selected_info = `ID: ${edge.id} Type: ${edge.label} Distance: ${edge.dist}`;
             this.$el.querySelector('#more-info').innerHTML = `<span> Residue: ${e.data.edge.source_label}, Area: ${e.data.edge.source_area}, Percent: ${e.data.edge.source_pct}</span>`;
