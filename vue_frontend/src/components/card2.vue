@@ -6,11 +6,6 @@
         </div>
         <div class="level">
           <b-container class="bv-example-row">
-            <!-- <b-row>
-                <b-form-select
-                    v-model="selected_chain" :options="chains" @change="$emit('update:synced_data', update());" >Select A Chain
-                </b-form-select>
-            </b-row> -->
             <b-row v-if="type === 'model'">
               <b-form-select
                 v-model="model_type" :options="styles" @change="update_model_type();" >Pick Style
@@ -31,45 +26,7 @@
                 </b-form-input>
               </b-col>
             </b-row>
-<!--            <b-row v-if="type === 'surface'">-->
-<!--                <b-col class="p-0">-->
-                   <!-- <b-form-input
-                       placeholder="Opacity" v-model.number="opacity" type='number' min="0" max="1" step="0.1" @change="$emit('update:synced_data', update());">
-                   </b-form-input> -->
-<!--                </b-col>-->
-<!--                <b-col class="p-0">-->
-<!--                    <b-form-input-->
-<!--                        placeholder="Color" v-model="color" @change="$emit('update:synced_data', update());">-->
-<!--                    </b-form-input>-->
-<!--                </b-col>-->
-<!--            </b-row>-->
-<!--            <b-row v-if="type === 'surface'">-->
-<!--                <b-form-select-->
-<!--                    v-model="color_scheme" :options="color_scheme_options" @change="$emit('update:synced_data', update());" >-->
-<!--                </b-form-select>-->
-<!--            </b-row>-->
-            <!-- <b-row
-              v-for="item in added_attributes"
-              v-bind:key="item.id">
-              <b-col class="p-0">
-                <b-form-select disabled='disabled'
-                  v-model="item.selected_attribute" :options="valid_attributes_options" @change="recalcAttributes(item);" >
-                </b-form-select>
-              </b-col>
-              <b-col v-if="!item.discrete" class="p-0">
-                <b-form-input disabled='disabled'
-                  placeholder="Value" v-model.number="item.value" @change="$emit('update:synced_data', update());">
-                </b-form-input>
-              </b-col>
-              <b-col v-if="item.discrete" class="p-0">
-                <b-form-select disabled='disabled'
-                  v-model="item.value" :options="item.valid_values" @change="$emit('update:synced_data', update());">
-                </b-form-select>
-              </b-col>
-            <b-button-close v-on:click="removeAttribute(item.id)" class="btn" style="width: 25px"></b-button-close>
-            </b-row> -->
           </b-container>
-          <!-- <b-button disabled='disabled' v-if="type ==='model'" type='button' variant='outline' class='btn-primary btn-block' v-on:click='addAttribute'> Add Attribute </b-button> -->
         </div>
     </div>
 </template>
@@ -82,8 +39,11 @@ export default {
   props: ['chains', 'synced_data'],
   watch: {
     chains: function (newVal, oldVal) { // watch it
-      this.selected_chain = this.synced_data['chain'];
-      this.update();
+      if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+        console.log('Prop changed: ', JSON.stringify(newVal), ' | was: ', JSON.stringify(oldVal));
+        this.selected_chain = this.synced_data['chain'];
+        this.update();
+      }
     },
   },
   data: function () {
@@ -155,17 +115,6 @@ export default {
         item.value = this.color;
         this.default = false;
       }
-      // if (this.surface != null) {
-      //   this.$parent.removeSurface(this.surface.surfid);
-      // }
-      // if (this.type === 'surface') {
-      //   if (this.render) {
-      //     this.surface = this.$parent.addChainSurface(this.selected_chain, this.opacity, this.color_scheme, this.color);
-      //   }
-      // } else if (this.type === 'model') {
-      //   // this.$parent.addModelStyle(this.model_type, this.selected_chain, this.opacity, this.color, this.removed);
-      //   // this.$parent.renderStyles();
-      // }
       return this.return_data;
     },
     update_model_type: function () {
@@ -251,8 +200,4 @@ export default {
   white-space: nowrap;
 }
 
-/* b-row {
-  align-items: center;
-  vertical-align: auto;
-} */
 </style>

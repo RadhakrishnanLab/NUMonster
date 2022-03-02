@@ -45,7 +45,7 @@
   </div>
 </template>
 <script>
-/* eslint-disable */
+// /* eslint-disable */
 import { MolstarDemoViewer } from './mol_viewer';
 import 'molstar/build/viewer/molstar.css';
 import attributeCard2 from './card2';
@@ -56,41 +56,43 @@ export default {
     attributeCard2
   },
   props: ['pdbFile', 'cards', 'chains'],
-  watch:{
-    chains: function(newVal, oldVal) { // watch it
-      // console.log('Prop changed: ', newVal, ' | was: ', oldVal);
-      this.default_cards = [];
-      this.default_cards.push(
-        {chain: newVal[0],
-          color: 'cyan',
-          opacity: 1,
-          type: 'model',
-          model_type: 'cartoon',
-          render: false,
-          removed: false,
-          default: true,
-          added_attributes: []
-        },
-        {chain: newVal[1],
-          color: 'pink',
-          opacity: 1,
-          type: 'model',
-          model_type: 'cartoon',
-          render: false,
-          removed: false,
-          default: true,
-          added_attributes: []
-        }
-      );
-      // this.viewer.dispose();
-      this.viewer.loadStructureFromData(this.pdbFile, 'pdb', {
-        type: this.structure3dRepresentation,
-        coloring: this.structure3dColoring,
-        uniformColor: this.uniformColor },
-        this.default_cards
-      );
-      this.viewer.toggleControls(false);
-      this.viewer.cards = this.default_cards;
+  watch: {
+    chains: function (newVal, oldVal) { // watch it
+      if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+        console.log('Prop changed: ', JSON.stringify(newVal), ' | was: ', JSON.stringify(oldVal));
+        this.default_cards = [];
+        this.default_cards.push(
+          {chain: newVal[0],
+            color: 'cyan',
+            opacity: 1,
+            type: 'model',
+            model_type: 'cartoon',
+            render: false,
+            removed: false,
+            default: true,
+            added_attributes: []
+          },
+          {chain: newVal[1],
+            color: 'pink',
+            opacity: 1,
+            type: 'model',
+            model_type: 'cartoon',
+            render: false,
+            removed: false,
+            default: true,
+            added_attributes: []
+          }
+        );
+        // this.viewer.dispose();
+        this.viewer.loadStructureFromData(this.pdbFile, 'pdb',
+          {type: this.structure3dRepresentation,
+            coloring: this.structure3dColoring,
+            uniformColor: this.uniformColor},
+          this.default_cards
+        );
+        this.viewer.toggleControls(false);
+        this.viewer.cards = this.default_cards;
+      }
     }
   },
   data: () => ({
@@ -104,7 +106,7 @@ export default {
     show_nucleotide: true,
     show_stick: false
   }),
-  mounted: function() {
+  mounted: function () {
     let viewer = new MolstarDemoViewer(this.$el.querySelector('#viewer3d'));
     this.viewer = viewer;
     this.controls = true;
@@ -129,31 +131,32 @@ export default {
         default: true,
         added_attributes: []
       });
-    viewer.loadStructureFromData(this.pdbFile, 'pdb', {
-      type: this.structure3dRepresentation,
-      coloring: this.structure3dColoring,
-      uniformColor: this.uniformColor },
+    viewer.loadStructureFromData(this.pdbFile,
+      'pdb',
+      {type: this.structure3dRepresentation,
+        coloring: this.structure3dColoring,
+        uniformColor: this.uniformColor},
       this.default_cards
     );
     fetch(this.pdbFile)
-      .then(function(res) {
+      .then(function (res) {
         if (res) {
           console.log('pdb loaded');
         }
       })
-      .catch(function(e) {
+      .catch(function (e) {
         console.error(e);
       });
   },
   methods: {
-    toggleVisibility: function() {
+    toggleVisibility: function () {
       this.controls = !this.controls;
       this.viewer.toggleControls(this.controls);
     },
-    // updateA: function(){
+    // updateA: function () {
     //   this.viewer.updateA();
     // },
-    toggleNucleotide: function() {
+    toggleNucleotide: function () {
       this.show_nucleotide = !this.show_nucleotide;
       if (!this.show_nucleotide) {
         this.structure3dRepresentation = 'no_nucleotide';
@@ -162,7 +165,7 @@ export default {
       }
       this.updateModel();
     },
-    toggleStick: function() {
+    toggleStick: function () {
       this.show_stick = !this.show_stick;
       if (this.show_stick) {
         this.structure3dRepresentation = 'ball-and-stick';
@@ -171,23 +174,23 @@ export default {
       }
       this.updateModel();
     },
-    updateModel: function() {
+    updateModel: function () {
       this.viewer.updateMoleculeRepresentation({
         type: this.structure3dRepresentation,
         coloring: this.structure3dColoring,
         uniformColor: this.uniformColor
       });
     },
-    logChange: function(change) {
+    logChange: function (change) {
       // currently also calls reloadCards to update visual display, this function is called when card2 changes
       // console.log("Changes:\n\n");
       // console.log(change);
       this.viewer.reloadCards([change]);
     },
-    focusOn: function(item){
+    focusOn: function (item) {
       // console.log(item);
       let chainID = item.replace(/[^a-z]/gi, '');
-      let index = item.replace( /^\D+/g, '');
+      let index = item.replace(/^\D+/g, '');
       // console.log(chainID);
       // console.log(index);
       let query = this.viewer.queryResidue(index, chainID);
@@ -198,7 +201,7 @@ export default {
     }
   },
   computed: {
-    Viewer3dProps: function() {
+    Viewer3dProps: function () {
       return this.structure3dRepresentation;
     }
   }

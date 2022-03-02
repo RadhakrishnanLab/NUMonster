@@ -309,6 +309,7 @@ export default {
               // v.setStyle({resi: atom_id, chain: atom_chain}, {cartoon: {color: default_colors[atom_chain], opacity: 1}, stick: {color: default_colors[atom_chain]}});
               // v.addSphere({center: {resi: atom_id, chain: atom_chain}, radius: 0.5, color: 'green'});
             }
+            // Adding the interactions to the 3d viewer
             for (let i = 0; i < graph.edges.length; i++) {
               let bond = graph.edges[i];
               let source = bond.source;
@@ -706,6 +707,7 @@ export default {
         let bond = graph.edges[i];
         // console.log(bond.dist);
         // console.log(this.all_edges[bond.type].value);
+        // filters out interactions that are greater than the limit set by the slider
         if (bond.dist <= this.all_edges[bond.type].value) {
           // console.log(bond);
           let id1 = bond.id;

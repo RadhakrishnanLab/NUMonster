@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import 'molstar/lib/mol-util/polyfill';
 // import {PluginConfig} from 'molstar/lib/mol-plugin/config';
 // import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
@@ -7,7 +5,7 @@ import {
   createStructureRepresentationParams,
   // StructureRepresentationBuiltInProps
 } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
-import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
+// import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 // import { InteractionsProvider } from 'molstar/lib/mol-model-props/computed/interactions';
 // import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
@@ -20,19 +18,11 @@ import {Color} from 'molstar/lib/mol-util/color';
 import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder';
 // import { TrajectoryFromSDF } from 'molstar/lib/mol-plugin-state/transforms/model';
 import { ColorNames } from 'molstar/lib/mol-util/color/names'
-import { ColorListNames, ColorListOptions } from 'molstar/lib/mol-util/color/lists';
+import { ColorListNames } from 'molstar/lib/mol-util/color/lists';
 import { Script } from 'molstar/lib/mol-script/script';
 import { StructureSelection } from 'molstar/lib/mol-model/structure/query';
 
-// type RepresentationParams = {
-//   type: "ball-and-stick" | "cartoon" | "putty",
-//   coloring: "uniform" | "element-symbol",
-//   uniformColor: {r: number, g: number, b: number}
-// }
-
 export class MolstarDemoViewer {
-  // plugin: PluginUIContext;
-
   constructor (element) {
     const spec = {
       ...DefaultPluginUISpec(),
@@ -73,9 +63,9 @@ export class MolstarDemoViewer {
     this.defaultProps = null;
     this.colorList = ColorListNames;
     this.typeParams = {
-      'cartoon' : {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']},
-      'no_no_nucleotide' : {visuals: ['polymer-trace', 'polymer-gap']},
-      'putty' : {visuals: ['polymer-tube']}
+      'cartoon': {visuals: ['polymer-trace', 'polymer-gap', 'nucleotide-block']},
+      'no_no_nucleotide': {visuals: ['polymer-trace', 'polymer-gap']},
+      'putty': {visuals: ['polymer-tube']}
     };
     this.cards = null;
   }
@@ -100,7 +90,7 @@ export class MolstarDemoViewer {
     // console.log(data);
     // console.log(format);
     try {
-      const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);   
+      const trajectory = await this.plugin.builders.structure.parseTrajectory(data, format);
       const model = await this.plugin.builders.structure.createModel(trajectory);
       if (!model) return;
       const structure = await this.plugin.builders.structure.createStructure(model);
@@ -122,20 +112,20 @@ export class MolstarDemoViewer {
       this.defaultProps = props;
       // console.log('begin');
       if (structure) {
-        cards.forEach( async card => {
+        cards.forEach(async card => {
           let card_props = JSON.parse(JSON.stringify(props));
           card_props.color = 'uniform';
           card_props.colorParams = {value: ColorNames[card.color]};
           const card_query = await this.queryChain(card.chain);
           const card_component = await this.createChainComponent(structure, card_query, 'Chain' + card.chain)
-          if (card_component) { 
+          if (card_component) {
             let card_structure = await this.addStructRepr(card_component, card_props);
             this.viewer_data[card.chain] = {'query': card_query,
-            'props' : card_props,
-            'component' : card_component,
-            'structure' : card_structure
+              'props': card_props,
+              'component': card_component,
+              'structure': card_structure
             }
-          } 
+          }
         });
       }
     } catch (error) {
@@ -163,7 +153,7 @@ export class MolstarDemoViewer {
     if (type === 'putty') {
       props.typeParams = {visuals: ['polymer-tube']}
     }
-    this.cards.forEach ( async card => {
+    this.cards.forEach(async card => {
       let card_props = this.viewer_data[card.chain].props;
       card_props.type = props.type;
       card_props.typeParams = props.typeParams;
@@ -179,8 +169,8 @@ export class MolstarDemoViewer {
   }
 
   // updates chainA with a random color
-  async updateA(){
-    let color = Object.keys(ColorNames)[Math.floor (Math.random() * 100)];
+  async updateA () {
+    let color = Object.keys(ColorNames)[Math.floor(Math.random() * 100)];
     // console.log(color);
     this.cards[0].color = color;
     this.reloadCards([this.cards[0]])
@@ -190,16 +180,16 @@ export class MolstarDemoViewer {
   async reloadCards (cards) {
     // the cards have changed and it's time to reload those changes
     if (this.structureDefault) {
-      cards.forEach( async card => {
+      cards.forEach(async card => {
         // console.log('reloadCards');
         // console.log(card);
         let card_props = null;
         let card_component = null;
         let card_query = null;
         let exists = card.chain in this.viewer_data;
-        if (!exists){
+        if (!exists) {
           card_props = JSON.parse(JSON.stringify(this.defaultProps));
-          if (card_props) {card_props.color = 'uniform';}
+          if (card_props) { card_props.color = 'uniform'; }
           card_query = this.queryChain(card.chain);
           card_component = await this.createChainComponent(this.structureDefault, card_query, 'Chain' + card.chain).catch(e => {
             console.log(e);
@@ -214,7 +204,7 @@ export class MolstarDemoViewer {
           card_props.typeParams.alpha = card.opacity;
           card_component = this.viewer_data[card.chain].component;
         }
-        if (card_component) { 
+        if (card_component) {
           let card_structure = null;
           if (exists) {
             card_structure = this.viewer_data[card.chain].structure;
@@ -223,12 +213,12 @@ export class MolstarDemoViewer {
             card_structure = await this.addStructRepr(card_component, card_props);
           }
           this.viewer_data[card.chain] = {'query': card_query,
-            'props' : card_props,
-            'component' : card_component,
-            'structure' : card_structure
+            'props': card_props,
+            'component': card_component,
+            'structure': card_structure
           }
         }
-      }); 
+      });
     }
   }
 
@@ -242,7 +232,7 @@ export class MolstarDemoViewer {
     // returns the query for the chain
     const query = MS.struct.generator.atomGroups({
       'residue-test': MS.core.logic.and([
-        MS.core.rel.eq([MS.ammp("auth_asym_id"), chainID]),
+        MS.core.rel.eq([MS.ammp('auth_asym_id'), chainID]),
         MS.core.set.has([MS.set(parseInt(resID)), MS.ammp('auth_seq_id')]),
       ])
     })
@@ -262,12 +252,10 @@ export class MolstarDemoViewer {
     return query;
   }
 
-
-
   queryChain (chainID) {
     // returns the query for the chain
     const query = MS.struct.generator.atomGroups({
-      'residue-test': MS.core.rel.eq([MS.ammp("auth_asym_id"), chainID])
+      'residue-test': MS.core.rel.eq([MS.ammp('auth_asym_id'), chainID])
     })
     return query;
   }
@@ -284,7 +272,7 @@ export class MolstarDemoViewer {
     return structure;
   }
 
-  async updateStruct(struct, props){
+  async updateStruct (struct, props) {
     // update a previous struct using props
     this.plugin.build().to(struct).update(createStructureRepresentationParams(this.plugin, void 0, props)).commit();
   }
