@@ -153,8 +153,8 @@ sub printBonds{
     if($bool){
 	open(FH, "> ".$file); 
 	
-	print FH "ChRes\tAtom\tArea\tPct\t<---Type(Dist)--->\tChRes\tAtom\tArea\tPct\n";
-	print FH "|---|\t|--|\t|---|\t|---|\t|----------------|\t|---|\t|--|\t|---|\t|---|\n";
+	print FH "ChRes\tRes\tAtom\tArea\tPct\t<---Type(Dist)--->\tChRes\tRes\tAtom\tArea\tPct\n";
+	print FH "|---|\t|---|\t|--|\t|---|\t|---|\t|----------------|\t|---|\t|---|\t|--|\t|---|\t|---|\n";
 	
 	my %Residue_Bonds=();
 	foreach my $b(@{$self->{'bonds'}{$m}}){
