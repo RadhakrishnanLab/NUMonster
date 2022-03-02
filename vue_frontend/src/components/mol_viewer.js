@@ -101,7 +101,7 @@ export class MolstarDemoViewer {
         type: type,
         // color: coloring,
         size: 'uniform',
-        sizeParams: {value: 2.0}
+        sizeParams: {value: 1.5}
       }
       if (coloring === 'uniform') {
         props.colorParams = {value: Color.fromRgb(uniformColor.r, uniformColor.g, uniformColor.b)}
@@ -140,7 +140,7 @@ export class MolstarDemoViewer {
     let props = {
       type: type,
       size: 'uniform',
-      sizeParams: {value: 2.0}
+      sizeParams: {value: 1.0}
     }
     console.log(type);
     if (type === 'cartoon') {
