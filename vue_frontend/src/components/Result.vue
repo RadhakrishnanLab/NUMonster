@@ -3,29 +3,43 @@
     <div v-if="display_label" class="card">
       <div class="card-header">
         <span>{{display_label}}</span>
-        <b-button-close v-on:click="closeDisplay()" class="btn"></b-button-close>
+        <!-- <b-button-close v-on:click="closeDisplay()" class="btn"></b-button-close> -->
       </div>
       <div v-if="display_graph" class="row card-body">
         <div  class="col-10">
           <div id="graph-container" class="display-container"></div>
         </div>
         <div class="col-2">
-          <br/>
           <div id="color-table">
             <h5>Filter Edges</h5>
             <!--<br/>
             <vue-slider v-model="dist_filter" :max=15 lazy=True @change="renderGraph"></vue-slider>-->
-            <div v-for='edge in all_edges' :key='edge.id' @change="renderGraph" class='form-check'>
-              <input type='checkbox' v-model='selected_edges' :value='edge.id' class='form-check-input'/>
-              <label v-bind:style="{color: edge.color, 'background-color': 'transparent'}" class='form-check-label'>
-                {{ edge.name }}
-              </label>
+            <div v-for='edge in all_edges' :key='edge.id' class='form-check'>
+              <div class='parent'>
+                <div class='child'>
+                <input type='checkbox' v-model='selected_edges' :value='edge.id' @change="renderGraph" class='form-check-input'/>
+                <label v-bind:style="{color: edge.color, 'background-color': 'transparent'}" class='form-check-label'>
+                  {{ edge.name }}
+                </label>
+                </div>
+                <!-- <template> -->
+                <div class='child'>
+                  <b-form-input id="distance_value" v-model="edge.value" type="range" :min="edge.min" :max="edge.max" step='0.1'></b-form-input>
+                </div>
+                <div class='child' id='child1'>
+                  {{edge.value}} Å
+                </div>
+                <!-- </template> -->
+              </div>
             </div>
           </div>
-          <br/>
+        <div class="parent2">
+          <b-button type='button' class='btn btn-secondary btn-block' v-on:click='renderGraph'>Update Filter</b-button>
+          <b-button type='button' class='btn btn-secondary btn-block' v-on:click='savePic2D'> Save Picture </b-button>
+        </div>
           <h5>Info</h5>
-          <div class="more-info">
-            {{selected_info}}
+          <div id="more-info">
+            <!-- {{selected_info}} -->
           </div>
           <div id="related-info">
             <h6>Related</h6>
@@ -34,6 +48,10 @@
       </div>
     </div>
     <div v-if="url_3D" class="card" id="target-box">
+      <div class = "text-right">
+      <b-button v-b-toggle.collapse class="btn">Toggle</b-button>
+      </div>
+      <b-collapse visible id="collapse">
         <div v-if="display_graph" class="row card-body">
           <div  class="col-10">
             <div v-if="url_3D" id="container-01" class="mol-container"></div>
@@ -63,7 +81,30 @@
             </div>
           </div>
         </div>
+      </b-collapse>
     </div>
+
+    <div v-if="url_3D" class="card" id="target-box3">
+      <div class = "text-right">
+       <b-button v-b-toggle.collapse-1 class="btn">Toggle</b-button>
+      </div>
+      <b-collapse visible id="collapse-1">
+        <!-- <div v-if="display_graph" id="molstar-block">
+            <molviewer v-if="url_3D" class="card"
+                      v-bind:pdb-file="pdbFile"
+                      v-bind:cards="added_cards"
+            > </molviewer> -->
+        <div v-if="display_graph">
+          <molviewer v-if="url_3D" class="card"
+                     v-bind:pdb-file="pdbFile"
+                     v-bind:cards="added_cards"
+                     v-bind:chains="[chain1, chain2]"
+                     ref="molviewer">
+          </molviewer>
+        </div>
+      </b-collapse>
+    </div>
+
     <br/>
     <h3>
       Results for {{$route.params.job_id}}
@@ -113,14 +154,24 @@
 
 <script>
 import vueSlider from 'vue-slider-component';
-import ButtonClose from 'bootstrap-vue';
+import {ButtonClose, BCollapse} from 'bootstrap-vue';
 import attributeCard from './card.vue';
+import attributeCard2 from './card2';
+import { Viewer } from 'molstar/build/viewer/molstar';
+import 'molstar/build/viewer/molstar.css';
+import molviewer from './molstar-viewer';
+// import html2canvas from 'html2canvas';
+// import('sigma/build/plugins/sigma.renderers.snapshot.min');
+
 export default {
   name: 'Result',
   components: {
     ButtonClose,
+    BCollapse,
     vueSlider,
-    attributeCard
+    attributeCard,
+    attributeCard2,
+    molviewer,
   },
   data: () => ({
     result: '',
@@ -146,10 +197,10 @@ export default {
       15
     ],
     all_edges: {
-      HYDPHB: {id: 'HYDPHB', name: 'Hydrophobic', color: '#808080'},
-      ELCSTA: {id: 'ELCSTA', name: 'Electrostatic', color: '#008800'},
-      HYBOND: {id: 'HYBOND', name: 'Hydrogen Bond', color: '#880000'},
-      SLTBDG: {id: 'SLTBDG', name: 'Salt Bridge', color: '#6e0088'},
+      HYDPHB: {id: 'HYDPHB', name: 'Hydrophobic', color: '#808080', min: '1', max: '5', value: '4'},
+      ELCSTA: {id: 'ELCSTA', name: 'Electrostatic', color: '#008800', min: '0', max: '8', value: '5'},
+      HYBOND: {id: 'HYBOND', name: 'Hydrogen Bond', color: '#880000', min: '1', max: '5', value: '3.5'},
+      SLTBDG: {id: 'SLTBDG', name: 'Salt Bridge', color: '#6e0088', min: '0', max: '5', value: '3.5'},
     },
     amino_acid: {
       ALA: 'A', ARG: 'R', ASN: 'N', ASP: 'D', CYS: 'C', GLN: 'Q', GLU: 'E', // eslint-disable-line
@@ -161,6 +212,7 @@ export default {
     s: undefined,
     hover_sphere: null,
     hover_style: null,
+    last_selected_node: null,
   }),
   mounted: function () {
     let mol_js = document.createElement('script');
@@ -182,6 +234,21 @@ export default {
     });
   },
   methods: {
+    initViewer: function (target) {
+      this.molstar_viewer = new Viewer(target, {
+        layoutIsExpanded: false,
+        layoutShowControls: true,
+        layoutShowRemoteState: false,
+        layoutShowSequence: true,
+        layoutShowLog: false,
+        layoutShowLeftPanel: false,
+        viewportShowExpand: true,
+        viewportShowSelectionMode: false,
+        viewportShowAnimation: false,
+      });
+      this.molstar_viewer.loadStructureFromUrl(this.pdbFile, 'pdb');
+      console.log(this.molstar_viewer);
+    },
     open3D: function (pdb_url, chain1, chain2, parsed_xml, _graph) {
       let graph = _graph || this.extractParsedXML(this.open_xml, this.selected_edges);
       let color_chart = this.all_edges;
@@ -220,6 +287,7 @@ export default {
         function () {
           renderStyles({render: true, removed: false}, true);
         });
+      // this.initViewer('target-box2');
     },
     makeModel: function (pdb_url, chain1, chain2, graph, color_chart, amino_acid, _viewer, default_colors, _callback) {
       let res_labels = [];
@@ -241,6 +309,7 @@ export default {
               // v.setStyle({resi: atom_id, chain: atom_chain}, {cartoon: {color: default_colors[atom_chain], opacity: 1}, stick: {color: default_colors[atom_chain]}});
               // v.addSphere({center: {resi: atom_id, chain: atom_chain}, radius: 0.5, color: 'green'});
             }
+            // Adding the interactions to the 3d viewer
             for (let i = 0; i < graph.edges.length; i++) {
               let bond = graph.edges[i];
               let source = bond.source;
@@ -248,10 +317,10 @@ export default {
               let bond_color = color_chart[bond.type].color;
               v.addCylinder({start: {resi: source.substring(1, source.length), chain: source.substring(0, 1), atom: bond.source_atom},
                 end: {resi: target.substring(1, target.length), chain: target.substring(0, 1), atom: bond.target_atom},
-                radius: 0.1,
+                radius: 0.05,
                 fromCap: 2,
                 toCap: 2,
-                dashed: false,
+                dashed: true,
                 color: bond_color,
                 opacity: 1});
               v.setClickable({resi: source.substring(1, source.length), chain: source.substring(0, 1), atom: bond.source_atom}, true, function (atom, viewer, event, container) {
@@ -279,8 +348,9 @@ export default {
               }
               // let style_options = {cartoon: {color: this.hover_color, opacity: 1}};
               this.hover_style = atom.style;
+              // console.log(atom)
               viewer.setStyle({resi: atom.resi, chain: atom.chain}, //  sets the style for the residue whose's atom is selected by hover
-                {cartoon: {color: 'purple', opacity: 0.85},
+                {cartoon: {hidden: true},
                   stick: {colorscheme: 'default'}});
               viewer.setStyle({resi: atom.resi, chain: atom.chain, elem: 'H'}, {stick: {color: 'black', hidden: true}}); //  hides hydrogen
               let sphere = viewer.addSphere({center: {x: atom.x, y: atom.y, z: atom.z}, radius: 1, color: atom.color, wireframe: true}); //  adds a sphere to indicate selected atom
@@ -370,15 +440,20 @@ export default {
       let node_ids = new Set();
       let source_indices = [];
       let target_indices = [];
+      // let interacting_residues = [];
       JSON.parse(xml_json).BONDS.BOND.forEach((bond, index) => {
         if (!bond_types.includes(bond.type._text)) { return }
         var target = 0;
         var target_atom = 0;
         var source_residue = 0;
         var target_residue = 0;
+        var target_pct = 0;
+        var target_area = 0;
         var source = 0;
         var source_atom = 0;
         var source_index = 0;
+        var source_pct = 0;
+        var source_area = 0;
 
         var target_index = 0;
         if (bond.RESIDUE[0].chain._text === this.chain1) {
@@ -390,6 +465,10 @@ export default {
           target_atom = bond.RESIDUE[1].atom._text;
           source_residue = bond.RESIDUE[0].name._text;
           target_residue = bond.RESIDUE[1].name._text;
+          source_area = bond.RESIDUE[0]._attributes.area;
+          target_area = bond.RESIDUE[1]._attributes.area;
+          source_pct = bond.RESIDUE[0]._attributes.pct;
+          target_pct = bond.RESIDUE[1]._attributes.pct;
         } else {
           source_index = bond.RESIDUE[1]._attributes.index;
           target_index = bond.RESIDUE[0]._attributes.index;
@@ -399,7 +478,12 @@ export default {
           target_atom = bond.RESIDUE[0].atom._text;
           source_residue = bond.RESIDUE[1].name._text;
           target_residue = bond.RESIDUE[0].name._text;
+          source_area = bond.RESIDUE[1]._attributes.area;
+          target_area = bond.RESIDUE[0]._attributes.area;
+          source_pct = bond.RESIDUE[1]._attributes.pct;
+          target_pct = bond.RESIDUE[0]._attributes.pct;
         }
+        // console.log(bond.RESIDUE[0])
         let s_res_name = source_residue in this.amino_acid ? this.amino_acid[source_residue] : source_residue;
         let t_res_name = target_residue in this.amino_acid ? this.amino_acid[target_residue] : target_residue;
         if (!node_ids.has(source)) {
@@ -413,11 +497,18 @@ export default {
             y: 0,
             size: 1,
             color: 'cyan',
+            original_color: 'cyan',
             index: source_index,
             direction: 'up',
             sigma_label: `${s_res_name}${source.substr(1)} ${source.charAt(0)}`,
+            area: source_area,
+            pct: source_pct
           });
           node_ids.add(source)
+          // interacting_residues.push({
+          //   id: target,
+          //   atoms: []
+          // });
         }
         if (!node_ids.has(target)) {
           if (!target_indices.includes(target_index)) {
@@ -430,13 +521,20 @@ export default {
             y: 40,
             size: 1,
             color: 'pink',
+            original_color: 'pink',
             index: target_index,
             direction: 'down',
             sigma_label: `${t_res_name}${target.substr(1)} ${target.charAt(0)}`,
+            area: target_area,
+            pct: target_pct
           });
           node_ids.add(target)
+          // interacting_residues.push({
+          //   id: target,
+          //   atoms: []
+          // });
+          // console.log(JSON.parse(JSON.stringify(interacting_residues)))
         }
-
         if (parseFloat(bond.dist._text) < this.dist_filter[0]) { return }
         if (parseFloat(bond.dist._text) > this.dist_filter[1]) { return }
         new_edges.push({
@@ -446,14 +544,38 @@ export default {
           source: source,
           source_atom: source_atom,
           source_label: `${s_res_name}${source.substr(1)}.${source.charAt(0)}`,
+          source_area: source_area,
+          source_pct: source_pct,
           target: target,
           target_label: `${t_res_name}${target.substr(1)}.${target.charAt(0)}`,
           target_atom: target_atom,
+          target_area: target_area,
+          target_pct: target_pct,
           color: this.all_edges[bond.type._text].color,
           type: bond.type._text,
           dist: bond.dist._text,
           added: [],
         })
+        // for (let i = 0; i < interacting_residues.length; i++) {
+        //   let res = interacting_residues[i]
+        //   if (res.id === source) {
+        //     if (!(source_atom in res.atoms.map(({id}) => id))) {
+        //       res.atoms.push({
+        //         id: source_atom,
+        //         area: source_area,
+        //         pct: source_pct
+        //       })
+        //     }
+        //   } else if (res.id === target) {
+        //     if (!(source_atom in res.atoms.map(({id}) => id))) {
+        //       res.atoms.push({
+        //         id: target_atom,
+        //         area: target_area,
+        //         pct: target_pct
+        //       })
+        //     }
+        //   }
+        // }
       });
       source_indices.sort((a, b) => a - b);
       target_indices.sort((a, b) => a - b);
@@ -471,6 +593,8 @@ export default {
           node.x = target_multiplier * target_indices.indexOf(node.index) + 1; // If you make two nodes perfectly aligned such that an edge between the two is a perpendicular line then sigma.js overEdge doesn't work on the edge
         }
       }
+      // this.interacting_res = interacting_residues
+      // console.log(interacting_residues)
       return {'nodes': new_nodes, 'edges': new_edges}
     },
     closeDisplay: function () {
@@ -501,6 +625,7 @@ export default {
         setTimeout(() => {
           this.s = new sigma({ // eslint-disable-line
             renderer: {
+              // id: 'screenshot',
               container: document.getElementById('graph-container'),
               type: 'canvas'
             },
@@ -516,24 +641,50 @@ export default {
               singleHover: true,
               labelAlignment: 'top',
               defaultLabelAlignment: 'top',
-              labelThreshold: 0
+              labelThreshold: 0,
+              zoomingRatio: 1
             }
           });
           this.s.bind('overNode', e => {
-            this.selected_info = `${e.data.node.label}`;
+            this.$el.querySelector('#more-info').innerHTML = `<span> Residue: ${e.data.node.label}, Area: ${e.data.node.area}, Percent: ${e.data.node.pct}</span>`;
             this.$el.querySelector('#related-info').innerHTML = '';
           });
           this.s.bind('overEdge', e => {
             const edge = e.data.edge;
+            // console.log(e)
             this.$el.querySelector('#related-info').innerHTML = '<h5>Interactions</h5>';
-            let currentBond = `<span style="color:${edge.color}">${edge.source_label}:${edge.source_atom}<>${edge.target_label}:${edge.target_atom}</span>`;
+            let currentBond = `<span style="color:${edge.color}">${edge.source_label}:${edge.source_atom}<-${edge.dist}->${edge.target_label}:${edge.target_atom}</span>`;
             this.$el.querySelector('#related-info').innerHTML += currentBond + '<br>';
             for (const id of edge.added) {
               let related_edge = this.s.renderers[0].edgesOnScreen.find(x => x.id === id);
-              let related_info = `<span style="color:${related_edge.color}">${related_edge.source_label}:${related_edge.source_atom}<>${related_edge.target_label}:${related_edge.target_atom}</span>`;
-              this.$el.querySelector('#related-info').innerHTML += related_info + '<br>';
+              if (related_edge) {
+                let related_info = `<span style="color:${related_edge.color}">${related_edge.source_label}:${related_edge.source_atom}<-${related_edge.dist}->${related_edge.target_label}:${related_edge.target_atom}</span>`;
+                this.$el.querySelector('#related-info').innerHTML += related_info + '<br>';
+              }
             }
-            this.selected_info = `ID: ${edge.id} Type: ${edge.label} Distance: ${edge.dist}`;
+            // this.selected_info = `ID: ${edge.id} Type: ${edge.label} Distance: ${edge.dist}`;
+            this.$el.querySelector('#more-info').innerHTML = `<span> Residue: ${e.data.edge.source_label}, Area: ${e.data.edge.source_area}, Percent: ${e.data.edge.source_pct}</span>`;
+            this.$el.querySelector('#more-info').innerHTML += '<br>';
+            this.$el.querySelector('#more-info').innerHTML += `<span> Residue: ${e.data.edge.target_label}, Area: ${e.data.edge.target_area}, Percent: ${e.data.edge.target_pct}</span>`;
+          });
+          this.s.bind('clickNode', e => {
+            const node = e.data.node;
+            if (!node.selected) {
+              this.$refs.molviewer.focusOn(node.id);
+              node.selected = true;
+              node.color = 'green';
+              if (this.last_selected_node) {
+                this.last_selected_node.selected = false;
+                this.last_selected_node.color = this.last_selected_node.original_color;
+              }
+              this.last_selected_node = node;
+            } else {
+              node.selected = false;
+              node.color = node.original_color;
+              this.last_selected_node = null;
+            };
+            // console.log(node);
+            this.s.refresh();
           });
           this.s.settings({
             drawLabels: true,
@@ -547,32 +698,50 @@ export default {
       // this.open3D(pdbFile, chain1, chain2, parsed_xml);
     },
     renderGraph: function () {
-      // console.log('starting render');
+      console.log('starting render');
       if (!this.s) { return }
       let graph = this.extractParsedXML(this.open_xml, this.selected_edges);
+      let graph_filtered = {'nodes': [], 'edges': []};
+      let relevant_nodes = new Set()
       for (let i = 0; i < graph.edges.length; i++) {
         let bond = graph.edges[i];
-        let id1 = bond.id;
-        let source = bond.source;
-        let target = bond.target;
-        for (let x = 0; x < graph.edges.length; x++) {
-          let bond2 = graph.edges[x];
-          let id2 = bond2.id;
-          let source2 = bond2.source;
-          let target2 = bond2.target;
-          if (id2 !== id1 && (((source === source2) && (target === target2)) || ((source === target2) && (target === source2)))) {
-            if (!bond.added.includes(id2)) {
-              bond.added.push(id2);
-              bond2.added.push(id1);
+        // console.log(bond.dist);
+        // console.log(this.all_edges[bond.type].value);
+        // filters out interactions that are greater than the limit set by the slider
+        if (bond.dist <= this.all_edges[bond.type].value) {
+          // console.log(bond);
+          let id1 = bond.id;
+          let source = bond.source;
+          let target = bond.target;
+          for (let x = 0; x < graph.edges.length; x++) {
+            let bond2 = graph.edges[x];
+            let id2 = bond2.id;
+            let source2 = bond2.source;
+            let target2 = bond2.target;
+            if (id2 !== id1 && (((source === source2) && (target === target2)) || ((source === target2) && (target === source2)))) {
+              if (!bond.added.includes(id2)) {
+                bond.added.push(id2);
+                bond2.added.push(id1);
+              }
             }
           }
+          graph_filtered.edges.push(bond);
+          relevant_nodes.add(bond.source);
+          relevant_nodes.add(bond.target);
         }
       }
+      for (let i = 0; i < graph.nodes.length; i++) {
+        let node = graph.nodes[i];
+        if (relevant_nodes.has(node.id)) {
+          graph_filtered['nodes'].push(node);
+        }
+      }
+
       this.s.graph.clear();
-      this.s.graph.read(graph);
+      this.s.graph.read(graph_filtered);
       this.s.refresh();
-      this.graph = graph;
-      this.open3D(this.pdbFile, this.chain1, this.chain2, this.open_xml, graph);
+      this.graph = graph_filtered;
+      this.open3D(this.pdbFile, this.chain1, this.chain2, this.open_xml, graph_filtered);
     },
     savePic: function () {
       if (confirm('Save image of 3D model?')) {
@@ -586,6 +755,27 @@ export default {
         link.click();
         document.body.removeChild(link);
       }
+    },
+    savePic2D: function () {
+      if (confirm('Save image of 2D interaction map?')) {
+        var canvas = document.getElementsByClassName('sigma-scene')[0];
+        const context = canvas.getContext('2d');
+        context.save();
+        context.globalCompositeOperation = 'destination-over';
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+        console.log('LOGGING...');
+        console.log(canvas);
+        var filename = '2dgraph.png';
+        var Img = canvas.toDataURL();
+        var link = document.createElement('a');
+        link.href = Img;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
     },
     hideResLabels: function () {
       if (this.draw_labels) {
@@ -718,16 +908,29 @@ export default {
     min-width: 97%;
   }
   .col-10{
-    max-width: calc(100% - 250px);
+    max-width: calc(100% - 310px);
     padding: 0px;
     height: 80vh;
   }
   .col-2{
-    min-width: 250px;
+    min-width: 310px;
     height: 80vh;
     padding: 5px;
     display: flex;
     flex-direction: column;
+  }
+  .parent{
+    display: grid;
+    grid-template-columns: 1fr 1fr 0.4fr;
+  }
+  .child {
+    padding: 1.1px;
+  }
+  #child1 {
+    text-align: center;
+  }
+  .parent2{
+    padding: 10px;
   }
   .mol-container {
     width: 100%;
@@ -747,16 +950,23 @@ export default {
   #undefined {
     max-width: 100%;
   }
-  .more-info, #related-info, #added-surfaces {
+  #target-box2, #target-box3{
+    margin-top: 30px;
+    /* min-height: 80vh; */
+  }
+  #molstar-block{
+    min-height: 80vh;
+  }
+  #more-info, #related-info, #added-surfaces, #added-surfaces2 {
     overflow-y: scroll;
     min-width: 100%;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  .more-info {
+  #more-info {
     max-height: 15%;
   }
-  .more-info::-webkit-scrollbar, #more-options::-webkit-scrollbar, #related-info::-webkit-scrollbar, #added-surfaces::-webkit-scrollbar{ /* WebKit */
+  #more-info::-webkit-scrollbar, #more-options::-webkit-scrollbar, #related-info::-webkit-scrollbar, #added-surfaces::-webkit-scrollbar, #added-surfaces2::-webkit-scrollbar{ /* WebKit */
     width: 0;
     height: 0;
   }
