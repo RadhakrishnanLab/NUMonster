@@ -2,6 +2,10 @@
 use warnings;
 use strict;
 
+# find custom libraries in same directory
+use FindBin 1.51 qw( $RealBin );
+use lib $RealBin;
+
 # standard libraries
 use File::Find qw(find);
 use File::Basename;
