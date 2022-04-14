@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -10,14 +11,9 @@ const cors = require('cors');
 const exec = require('child_process').exec;
 
 // Get environment variables
-const PORT = process.env.PORT || 9001;
-const SSL_KEY = process.env.SSL_KEY;
-const SSL_CERT = process.env.SSL_CERT;
-const UPLOAD_DIR = process.env.UPLOAD_DIR || '/home/monster_uploads/upload';
-const UPLOAD_URL = process.env.UPLOAD_URL || 'http://monster.northwestern.edu/files/upload';
-const JOBS_DIR = process.env.JOBS_DIR || '/home/monster_uploads/jobs';
-const DL_URL = process.env.DL_URL || 'http://monster.northwestern.edu/jobs';
-
+const UPLOAD_DIR = process.env.UPLOAD_DIR;
+const JOBS_DIR = process.env.JOBS_DIR;
+const DL_URL = process.env.DL_URL;
 
 const app = express();
 app.use(cors());
@@ -57,6 +53,10 @@ app.get('/', function (req, res) {
         pairs : []
 	});
 });
+
+app.get('/ping', function (req, res) {
+    res.send('1');
+})
 
 app.get('/results/:job_id', function(req, res) {
 	const jobs_dir = `${JOBS_DIR}/${req.params.job_id}`;
@@ -143,7 +143,7 @@ app.post('/upload', function(req, res) {
 			}
 			response.pipe(file).on('finish', function () {
 				console.log('Download PDB from RCSB: ' + file_path);
-				url_path = `${UPLOAD_URL}/${epoch}/${pdbID}.pdb`;
+				url_path = `${epoch}/${pdbID}.pdb`;
 				parse(file_path, url_path, res);
 			});
 		});
@@ -156,7 +156,7 @@ app.post('/upload', function(req, res) {
         let pdb = req.files.pdbFile;
 
         file = dir + '/' + pdb.name;
-        url_path = `${UPLOAD_URL}/${epoch}/${pdb.name}`;
+        url_path = `${epoch}/${pdb.name}`;
 
         pdb.mv(file, function (err) {
             if (err) {
@@ -182,17 +182,18 @@ app.post('/jobxml', function (req, res) {
     let xml ='';
     let job_id = '';
     //regex string matching to find job_id from xml string
-    let regex = /index='([^']*)/;
+    // let regex = /index='([^']*)/;
     //sh is the location of the shell script that activates monster_web
     let sh = './perlbackend.sh';
     //gets xml sent in the request
     console.log(req.body)
-    console.log(req.headers)
+    // console.log(req.headers)
     xml = req.body.xml;
+    job_id = req.body.job_id;
     //finds job_id
-    console.log(xml)
+    // console.log(xml)
 
-    job_id = xml.match(regex)[1];
+    // job_id = xml.match(regex)[1];
 
     console.log(job_id);
 
@@ -201,6 +202,11 @@ app.post('/jobxml', function (req, res) {
     makeXMLFile(job_id, file, xml, (err) => {
         let message = (err) ? err : job_id + '.xml has been saved';
         console.log(message);
+        var today = new Date();
+        var date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+        var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+        var dateTime = 'Current Time is : ' + date + ' ' + time;
+        console.log(dateTime);
         //returns the job_id
         res.json(job_id);
         if(!err){
@@ -219,16 +225,6 @@ app.post('/jobxml', function (req, res) {
 
 //exports as a module to enable unit testing
 module.exports = app;
-
-if (SSL_CERT) {
-    https.createServer({
-        key: fs.readFileSync(SSL_KEY),
-        cert: fs.readFileSync(SSL_CERT)
-    }, app).listen(PORT, function () {
-        console.log('https app listening on port ' + PORT)
-    });
-}
-
 
 // parses the uploaded pdb file. takes the folder as input
 function parse(file, url_path, res) {
@@ -291,14 +287,14 @@ function makeXMLFile(job_id, file, xml, callback) {
 
     //makes the directory with the file path generated
     fs.mkdirSync(dirxml);
-    console.log('New folder created!');
+    // console.log('New folder created!');
     //changes permissions on the directory
     fs.chmodSync(dirxml, 0o777);
     filexml = dirxml + '/' + job_id + '.xml';
     //makes the new xml file and writes to it
     fs.writeFile(filexml, xml, (err) => {
         if (err) callback(err);
-        console.log('The xml file has been saved!');
-        callback(err);
+        // console.log('The xml file has been saved!');
+        callback(null);
     });
 }

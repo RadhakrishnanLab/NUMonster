@@ -31,6 +31,7 @@ sub new {
 	$self->{'currentModel'} = '';
 	$self->{'all'} = {};
 	$self->{'contacts'} = {};
+	$self->{'chains'}=();
 	$self->{'chainPairs'}=();
 	$self->{'locs'}=();
 	$self->{'trueTerminals'}={};
@@ -45,6 +46,7 @@ sub getModel{my $self=shift;return $self->{'currentModel'};}
 sub getModels{my $self=shift;return keys %{$self->{'models'}};}
 
 sub chainPairs{my $self=shift;return keys %{$self->{'chainPairs'}};}
+sub chains{my $self=shift;return keys %{$self->{'chains'}};}
 sub residues{my($self)=@_;return keys %{$self->{'residues'}{$self->{'currentModel'}}};}
 sub chainResidues{my $self=shift;
 		  return sort {substr($a,1) <=> substr($b,1)} grep {substr($_,0,1) eq $_[0]} $self->residues;
@@ -202,6 +204,7 @@ sub parse{
     my $file=shift;
     my $xml=shift;
     my $bonds = shift;
+    my $logging = shift || 0;
 
     my %tChs;
     my $modelCount=0;
@@ -211,15 +214,19 @@ sub parse{
 	    $self->{'chainPairs'}{$cp}=1;
 	}
     }
-    
-    #open(FILE, "< $file") or die "\ncouldn't open FILE: ".$file.": $! ";
-    #my $stream = (File::Stream->new(\*FILE, separator => qr{[\cM\r\n]}))[1];
 
+    if($logging){
+	print("File: ",$file,"\n");
+    }
     my $stream=getFileHandle($file);
 
     my $i=0;
     my ($temp,$first,$chain);
     my($firstH,$secondH,$thirdH,$oxt);
+
+    # I'm adding this code to remember and insert the current chain if it goes missing for some atoms (as in HAAD's new protons)
+    my $current_chain="";
+
     while(<$stream>){
 	%tChs=();
 	if($_ =~ /^ATOM/){
@@ -232,7 +239,23 @@ sub parse{
 	    #when shallow copying referents.
 	    #
 	    $temp = new PDB::Atom('-line' => $_, '-number'=>$i);
+
+	    if( $temp->chainId ne "" && ( $current_chain eq "" || 
+					  ( $current_chain ne $temp->chainId ) ) ){
+		$current_chain=$temp->chainId;
+	    }
+
+	    if($current_chain ne "" && $temp->chainId eq ""){
+		$temp->setChainId($current_chain);
+	    }
+	    
+	    $self->{'chains'}{$temp->chainId}++;
 	    $first = new PDB::Atom('-line' => $_) unless $first;
+
+	    if($current_chain ne "" && $first->chainId eq ""){
+		$first->setChainId($current_chain);
+	    }
+
 	    if($first){
 		if($temp->resNumber eq $first->resNumber && 
 		   $temp->chainId eq $first->chainId &&
@@ -252,10 +275,20 @@ sub parse{
 		if($chain){
 		    if($chain->chainId ne $temp->chainId){
 			$chain = new PDB::Atom('-line' => $_);
+
+			if($current_chain ne "" && $chain->chainId eq ""){
+			    $chain->setChainId($current_chain);
+			}
+
 			$temp->chargeN;
 		    }
 		}else{
 		    $chain = new PDB::Atom('-line' => $_);
+
+		    if($current_chain ne "" && $chain->chainId eq ""){
+			$chain->setChainId($current_chain);
+		    }
+
 		    $temp->chargeN;
 		}
 	    }
@@ -269,40 +302,74 @@ sub parse{
                 if($chain){
 		    if($secondH && !$thirdH && $firstH->hydNumber eq '1'){
 			$thirdH = new PDB::Atom('-line' =>$_);
+
+			if($current_chain ne "" && $thirdH->chainId eq ""){
+			    $thirdH->setChainId($current_chain);
+			}
+
 			$thirdH->setModel($modelCount);
 			$i--;
 			next;
 		    }elsif($firstH && !$secondH){
 			$secondH  = new PDB::Atom('-line' => $_);
+
+			if($current_chain ne "" && $secondH->chainId eq ""){
+			    $secondH->setChainId($current_chain);
+			}
+
 			$secondH->setModel($modelCount);
 			$i--;
 			next;
 		    }elsif($oxt && !$firstH){
                         $firstH  = new PDB::Atom('-line' => $_);
+
+			if($current_chain ne "" && $firstH->chainId eq ""){
+			    $firstH->setChainId($current_chain);
+			}
+
 			$firstH->setModel($modelCount);
                         $i--;
 			next;
                     }elsif($chain->chainId ne $temp->chainId && !$oxt && $temp->atomName eq 'OXT'){
                         $oxt = new PDB::Atom('-line' => $_);
+
+			if($current_chain ne "" && $oxt->chainId eq ""){
+			    $oxt->setChainId($current_chain);
+			}
+
 			$oxt->setModel($modelCount);
 			$i--;
 			next;
                     }else{
 			$chain = new PDB::Atom('-line' => $_);
+
+			if($current_chain ne "" && $chain->chainId eq ""){
+			    $chain->setChainId($current_chain);
+			}
+
 		    }
                 }else{
                     $chain = new PDB::Atom('-line' => $_);
+
+		    if($current_chain ne "" && $chain->chainId eq ""){
+			$chain->setChainId($current_chain);
+		    }
 		}
 	    }
 
 	    $temp->setModel($modelCount);
 	    $self->{'trueTerminals'}{$temp->naturalChain()}{$temp->resNumber()}=1 unless $modelCount >1;
+
 	    ###################### restrict and clear-up #############################
 	    ########################################################################
 	    #
             #NB: Whatif handles new terminal protons incorrectly for nucleic residues 
             # 
 	    next if $temp->proton && $temp->atomName =~ /^H[123]$/ && $temp->isNA && notTerminalProtons($self,$temp,$bonds);
+
+	    if($logging && $temp->chainId eq "A" && $temp->resNumber == 1){
+		print($i,"\t",$_,"\t",$temp->atomNumber,"\t",$temp->atomName,"\t",$temp->naturalChain,"\n");
+	    }
 
 	    if($xml){
 		$temp->clearChainIds;
@@ -326,6 +393,7 @@ sub parse{
 		#or floss teeth for that matter either.
 		#
 	    }
+
             ##################################### add ####################################################
             #############################################################################################
 	    addToMemory($self, $temp, $i);
@@ -393,7 +461,8 @@ sub parse{
 		    }
 		}
 		unless($temp->{'heavy'}){
-		    WebDBI->naming_error($xml,$temp,'heavy');
+		    print STDERR "Atom naming error: ".$temp->chainId."\t".$temp->resName."\t".$temp->resNumber."\t".$temp->atomName."\n";
+		    #WebDBI->naming_error($xml,$temp,'heavy');
 		}else{
 		    #print "PASSED: ".$self->{'all'}{$temp->heavy}->atomName."\n" if $temp->NAproton;
 		}
@@ -406,7 +475,6 @@ sub parse{
 		next if !$xml && $temp->naturalChain eq $ch; #contacts contain natural chains if not xml
 		#if $temp has 1 chain and thats the same as $ch, then next.
 		next if $xml && $temp->onlyEq($ch);
-		#print $temp->chainId.$ch."\n";
 		
 		foreach my $r (sort {$a <=> $b} keys %{$self->{'contacts'}{$modelCount}{$ch}}){
 		    next if $temp->resNumber eq $r && 
@@ -440,6 +508,7 @@ sub parse{
 	}elsif($_ =~ /^HETATM/){
 	    $i++;
 	    $temp = new PDB::Hetatm('-line' => $_);
+	    $self->{'chains'}{$temp->chainId}++;
 	    $temp->setModel($modelCount);
 
 	    $self->{'all'}{$i}=$temp;
@@ -453,6 +522,27 @@ sub parse{
 	    $temp = new PDB::Line('-line' => $_, 
 				  '-model' => $modelCount);
 	    $self->{'other'}{$i}=$temp;
+	}
+    }
+}
+
+sub stripProtons{
+    my ($self) = @_;
+
+    foreach my $proton_number (keys %{$self->{'protons'}}){
+	my $resNumber = $self->{'all'}{$proton_number}->resNumber();
+
+	delete($self->{'all'}{$proton_number});
+	delete($self->{'protons'}{$proton_number});
+	if(exists($self->{'atoms'}{$proton_number})){
+	    delete($self->{'atoms'}{$proton_number});
+	}
+    
+	foreach my $ch ($self->chains()){
+	    foreach my $md ($self->getModels()){
+		delete($self->{'residues'}{$md}{$ch.$resNumber}{$proton_number});
+		delete($self->{'models'}{$md}{$ch}{$proton_number});
+	    }
 	}
     }
 }

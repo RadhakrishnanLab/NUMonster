@@ -33,7 +33,6 @@ my %formatH=('A'=>{'GLY'=>1},
 	     'D'=>{'PRO'=>1,'ARG'=>1,'LYS'=>1},
 	     'E'=>{'LYS'=>1});
 
-
 #
 #strictly for identifying residue type
 #
@@ -43,7 +42,6 @@ my %aas=('GLY'=>1,'ALA'=>1,'VAL'=>1,'CYS'=>1,'SER'=>1,'THR'=>1,'ASN'=>1,
 
 my %nas=('A'=>1,'G'=>1,'C'=>1,'T'=>1,'U'=>1,'I'=>1,
 	 '+A'=>1,'+C'=>1,'+U'=>1,'+T'=>1,'+G'=>1,'+I'=>1);
-
 
 #for identifying aromatics
 my %aromatics=('TRP'=>{'CB'=>1,'CD1'=>1,'CD2'=>1,'CE2'=>1,'CE3'=>1,'CZ2'=>1,'CZ3'=>1,'CH2'=>1},
@@ -68,6 +66,7 @@ my %amines=('LYS'=>{'NZ'=>1},
 	    'GSN'=>{'NE2'=>1},
 	    'ARG'=>{'NE'=>1,'CZ'=>1,'NH1'=>1,'NH2'=>1},
 	   );
+
 #
 #Whatif will change modified residues ('+') into
 #4 letter code, using space next to residue name.
@@ -348,7 +347,14 @@ sub setAtomRemote{my $self=shift; $self->{'AR'}=$_[0];}
 sub setAtomBranch{my $self=shift; $self->{'AB'}=$_[0];}
 sub setAltLoc{my $self=shift; $self->{'AL'}=$_[0];}
 sub setResName{my $self=shift; $self->{'R'}=$_[0];}
-sub setChainId{my $self=shift; $self->{'CI'}[0]=$_[0];}
+sub setChainId{
+    my $self=shift;
+    $self->{'CI'}[0]=$_[0];
+    # if natural chain is empty, should set it
+    if($self->{'chain'} eq ""){
+	$self->{'chain'} = $self->{'CI'}[0];
+    }
+}
 sub addChainIds{my $self=shift; push @{$self->{'CI'}}, @_;}
 sub setResNumber{my $self=shift; $self->{'RN'}=$_[0];}
 sub setInsCode{my $self=shift; $self->{'IC'}=$_[0];}

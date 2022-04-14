@@ -12,10 +12,10 @@ package MSMS;
 
 use strict;
 use Errno qw(EAGAIN);
-
+use Cwd;
 use PDB::Writer;
 
-my $default_path = '/home/monster/execs/msms/';
+my $default_path = './dependencies/msms/';
 my $job;
 my ($c1,$c2);
 my $xml;
@@ -26,6 +26,7 @@ sub doMSMS{
     my $self=shift;
     my $pdb=shift;
     ($job,$c1,$c2,$xml)=@_;
+
     get_buried_surface($pdb);
 }
 
@@ -64,10 +65,10 @@ sub get_buried_surface {
 
       FORK: {
 	  if ($child = fork) {
-	      PDB::Writer->write('models'=>$pdb->getModel,'path'=>"$cf1.pdb",'chains'=>[$c1],'pdb'=>$pdb,'xml'=>$xml);
-	      
+	      PDB::Writer->write('model'=>$pdb->getModel,'path'=>"$cf1.pdb",'chains'=>[$c1],'pdb'=>$pdb,'xml'=>$xml);
+
 	      convert_to_xyzr($cf1);
-	      
+
 	      open( DONEFILE, ">$cf1.done" ) or 
 		  die "\ncouldn't create $cf1.done: $!";
 	      close(DONEFILE);
@@ -85,10 +86,10 @@ sub get_buried_surface {
 	      waitpid( $child, 0);
 
 	  }elsif (defined $child) {
-	      PDB::Writer->write('models'=>$pdb->getModel,'path'=>"$cf2.pdb",'chains'=>[$c2],'pdb'=>$pdb,'xml'=>$xml);
-	      
+	      PDB::Writer->write('model'=>$pdb->getModel,'path'=>"$cf2.pdb",'chains'=>[$c2],'pdb'=>$pdb,'xml'=>$xml);
+
 	      convert_to_xyzr($cf2);
-	      
+
 	      # creating this file will signal to the other process
 	      # that we are finished writing our xyzr file, so it
 	      # is safe to start running MSMS
@@ -99,7 +100,7 @@ sub get_buried_surface {
 	      # wait for the other process to signal that it is
 	      # safe to continue
 	      until( -e "$cf1.done" ) {}
-	      
+
 	      my $outfile = run_msms($cf2,$cf1);
 	      
 	      rename( $outfile, "$cpf2.anal" ) or warn "\ncouldn't rename $outfile: $!";
@@ -128,9 +129,9 @@ sub get_buried_surface {
 sub convert_to_xyzr {
 	my $file = shift;
 
-	my $xyzr = "$default_path/pdb_to_xyzr -h";
+	my $xyzr = $default_path."pdb_to_xyzr -h";
 
-	qx "$xyzr $file.pdb >$file.xyzr";
+	qx "$xyzr $file.pdb > $file.xyzr";
 
 	return "$file.xyzr";
 }
@@ -158,11 +159,11 @@ sub run_msms {
 	# STDERR is redirected to STDOUT because
 	# MSMS will emit some random diagnostic messages.
 	# Running msms now
-	qx "$msms $cf1.xyzr $cf2.xyzr 19 >$mslog 2>&1";
+	qx "$msms $cf1 $cf2 19 >> $mslog 2>&1";
 
 	my $outbase = $job.substr($cf1,-1)."ct".substr($cf2,-1)."_19";
 	qx "cat $outbase.log >> $mslog";
-	$rm=1;
+	$rm=0;
 	unlink( "$outbase.vert", "$outbase.face", "$outbase.log" ) if $rm;
 	$rm=0;
 	return "$outbase.anal" if -e "$outbase.anal";

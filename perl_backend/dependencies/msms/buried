@@ -1,0 +1,49 @@
+#! /bin/bash
+#	Modified from original buried.csh to work with bash
+#
+
+if [ ! -s "${1}.xyzr" ] ;
+then
+    echo "Missing input file: ${1}.xyzr";
+    exit;
+elif [ ! -s "${2}.xyzr" ] ;
+then
+    echo "Missing input file: ${2}.xyzr";
+    exit;
+fi ;
+
+density=19
+if [ ! -z $3 ] ;
+then
+    density=$3
+fi ;
+
+bn1="$( basename $1 )"
+bn2="$( basename $2 )"
+OF="${bn1}ct${bn2}_${density}"
+echo $OF
+echo
+echo "Computing surface of ${bn1} buried by ${bn2} -- density = ${density}"
+echo "Running MSMS"
+
+#Find CWD of script, can break for a number of reasons
+DIR="$( cd "$( dirname $0 )" && pwd )"
+
+#Find CWD of files, can break for a number of reasons
+LOG="$( cd "$( dirname $1 )" && pwd )"
+
+echo "Surface of ${bn1} buried by ${bn2} -- density = ${density}" > "${LOG}/${OF}.log"
+"${DIR}"/msms -density $density -probe_radius 1.4 \
+	-if "${1}.xyzr" -buried "${2}.xyzr" \
+	-of "${LOG}/${OF}" >> "${LOG}/${OF}.log"
+
+echo
+echo "Analyzing buried surface..."
+if [ ! -s ${1}.pdb ] ;
+then
+    echo "Missing PDB file ${1}.pdb";
+else
+    grep "buried SES" "${LOG}/${OF}.log" > "${LOG}/${OF}.anal";
+    "${DIR}"/vert2residues "${1}.pdb" "${LOG}/${OF}.vert" >> "${LOG}/${OF}.anal";
+fi
+echo "Done. Write AVS fld files and surface analysis files ${OF}"

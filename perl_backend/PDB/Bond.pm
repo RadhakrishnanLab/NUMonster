@@ -54,9 +54,9 @@ sub fullString{
     my $a1 = $pdb->atom($self->{'one'});
     my $a2 = $pdb->atom($self->{'two'});
 
-    my $string = " ".$self->{'c1'}.$a1->resNumber."\t ".$a1->atomName."\t".numberFormat($a1->area,2,2)."\t".numberFormat($a1->percent,2,2)."\t";
+    my $string = " ".$self->{'c1'}.$a1->resNumber."\t ".$a1->resName."\t ".$a1->atomName."\t".numberFormat($a1->area,2,2)."\t".numberFormat($a1->percent,2,2)."\t";
     $string .= "<--".$self->{'type'}."(".numberFormat($self->{'dist'},1,2).")-->\t";
-    $string .= " ".$self->{'c2'}.$a2->resNumber."\t ".$a2->atomName."\t".numberFormat($a2->area,2,2)."\t".numberFormat($a2->percent,2,2);
+    $string .= " ".$self->{'c2'}.$a2->resNumber."\t ".$a2->resName."\t ".$a2->atomName."\t".numberFormat($a2->area,2,2)."\t".numberFormat($a2->percent,2,2);
     return $string;
 }
 

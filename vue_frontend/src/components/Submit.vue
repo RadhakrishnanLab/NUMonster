@@ -4,7 +4,7 @@
              dismissible
              :show="showSuccessAlert"
              @dismissed="showSuccessAlert=false">
-      Job submission succeeded. Check your email for details
+      Job submission succeeded. The Job ID is  {{ new_job_id}}. Job submissions typically take up to 10 minutes, we will email you once the job is done.
     </b-alert>
     <b-alert variant="danger"
              dismissible
@@ -15,7 +15,7 @@
     <div class='row'>
       <!-- COL 1 -->
       <div class='col-sm'>
-        <div class='card'>
+        <div class='card' id='card1'>
           <div class='card-header'>
             <h3>File Upload/Enter PDB ID</h3>
           </div>
@@ -86,7 +86,7 @@
             </div>
             <div>
               <div class='card-body'>
-                <div class='alert alert-warning' role='alert' v-if='selected_chains.length < 2'>
+                <div class='alert alert-warning' role='alert' v-if='showSuccessAlert === false && selected_chains.length < 2'>
                   Select at least 2 protein chains to continue
                 </div>
                 <button class='btn btn-sm btn-secondary' v-on:click='selectAllPairs'
@@ -108,7 +108,7 @@
 
       <!-- COL 3 -->
       <div class='col-sm'>
-        <div class='card'>
+        <div class='card' id='card3'>
           <div class='card-header'>
             <h3>Retrieve a result</h3>
           </div>
@@ -177,6 +177,7 @@ export default {
     new_chain: {},
     monster_url: Vue.prototype.$server_url + '/jobxml',
     job_id: '',
+    new_job_id: '',
     ret_pdb_id: '',
     loading: false,
     showSuccessAlert: false,
@@ -234,7 +235,9 @@ export default {
         return;
       }
       let formData2 = new FormData();
-      formData2.append('xml', this.makeXML());
+      let job_xml = this.makeXML();
+      formData2.append('xml', job_xml[0]);
+      formData2.append('job_id', job_xml[1]);
       this.loading = true;
       this.$http.post(this.monster_url, formData2)
       // fetch(this.monster_url, {
@@ -247,7 +250,11 @@ export default {
         .then(res => res.text())
         .then(() => {
           this.loading = false;
+          this.new_job_id = job_xml[1];
           this.showSuccessAlert = true;
+          this.job_id = job_xml[1];
+          this.selected_pairs = [];
+          this.selected_chains = [];
         }).catch((err) => {
           this.loading = false;
           console.error(err);
@@ -271,21 +278,9 @@ export default {
       // let es_txt = this.escapeXml(txt);
       let es_txt = txt;
       let xml =
-        `<?xml version='1.0'?>
-        <methodCall>
-          <methodName>Monster.go</methodName>
-          <params>
-            <param>
-              <value>
-                <string>
-                ${es_txt}
-              </string>
-            </value>
-          </param>
-          </params>
-        </methodCall>`;
+        `${es_txt}`;
       console.log(xml);
-      return xml;
+      return [xml, index];
     },
     escapeXml: function (unsafe) {
       return unsafe.replace(/[<>&'']/g, function (c) {
@@ -301,3 +296,6 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+</style>
